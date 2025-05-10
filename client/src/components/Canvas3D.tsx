@@ -17,12 +17,19 @@ interface ChunkGridProps {
 
 const ChunkGrid = ({ dimensions, activeChunk }: ChunkGridProps) => {
   const setActiveChunk = useEditor(state => state.setActiveChunk);
+  const currentLayer = useEditor(state => state.currentLayer); // Get current layer for proper positioning
   
-  // Calculate number of chunks in each dimension
-  const chunksX = Math.ceil(dimensions[0] / CHUNK_SIZE);
-  const chunksZ = Math.ceil(dimensions[2] / CHUNK_SIZE);
+  // Unlimited chunks in XZ plane
+  // We'll display a reasonable number of chunks around the center (0,0)
+  const visibleChunksRadius = 10; // Show 20x20 chunks (10 in each direction from center)
   
-  // Generate lines for chunk boundaries
+  // Calculate visible chunk boundaries
+  const minChunkX = -visibleChunksRadius;
+  const maxChunkX = visibleChunksRadius;
+  const minChunkZ = -visibleChunksRadius;
+  const maxChunkZ = visibleChunksRadius;
+  
+  // Generate lines for chunk boundaries in current layer
   const chunkLines = useMemo(() => {
     const lines: Array<{
       points: [number, number, number][];
@@ -31,41 +38,39 @@ const ChunkGrid = ({ dimensions, activeChunk }: ChunkGridProps) => {
     }> = [];
     
     // Create horizontal chunk lines (along X axis)
-    for (let z = 0; z <= chunksZ; z++) {
+    for (let z = minChunkZ; z <= maxChunkZ; z++) {
       const zPos = z * CHUNK_SIZE;
-      if (zPos > dimensions[2]) continue; // Skip if outside dimensions
       
       const points: [number, number, number][] = [];
-      for (let x = 0; x <= dimensions[0]; x++) {
-        points.push([x, 0, zPos]);
+      for (let x = minChunkX * CHUNK_SIZE; x <= maxChunkX * CHUNK_SIZE; x++) {
+        points.push([x, currentLayer, zPos]);
       }
       
       lines.push({
         points,
         color: "#5050FF", // Blue for chunk boundaries
-        lineWidth: 2,
+        lineWidth: 1.5, // Slightly thinner for subtle appearance
       });
     }
     
     // Create vertical chunk lines (along Z axis)
-    for (let x = 0; x <= chunksX; x++) {
+    for (let x = minChunkX; x <= maxChunkX; x++) {
       const xPos = x * CHUNK_SIZE;
-      if (xPos > dimensions[0]) continue; // Skip if outside dimensions
       
       const points: [number, number, number][] = [];
-      for (let z = 0; z <= dimensions[2]; z++) {
-        points.push([xPos, 0, z]);
+      for (let z = minChunkZ * CHUNK_SIZE; z <= maxChunkZ * CHUNK_SIZE; z++) {
+        points.push([xPos, currentLayer, z]);
       }
       
       lines.push({
         points,
         color: "#5050FF", // Blue for chunk boundaries
-        lineWidth: 2,
+        lineWidth: 1.5, // Slightly thinner for subtle appearance
       });
     }
     
     return lines;
-  }, [dimensions, chunksX, chunksZ]);
+  }, [currentLayer, minChunkX, maxChunkX, minChunkZ, maxChunkZ]);
   
   // Render the highlighted active chunk with vertical extensions
   const activeChunkMesh = useMemo(() => {
@@ -75,45 +80,39 @@ const ChunkGrid = ({ dimensions, activeChunk }: ChunkGridProps) => {
     const x = chunkX * CHUNK_SIZE;
     const z = chunkZ * CHUNK_SIZE;
     
-    // Make sure chunk is in bounds
-    if (x >= dimensions[0] || z >= dimensions[2]) return null;
-    
-    // Calculate maximum chunk size based on remaining dimensions
-    const sizeX = Math.min(CHUNK_SIZE, dimensions[0] - x);
-    const sizeZ = Math.min(CHUNK_SIZE, dimensions[2] - z);
-    
     // Max height for vertical lines (Minecraft's max height)
-    const MAX_HEIGHT = 319;
+    const MIN_HEIGHT = -64; // Minecraft's lowest point
+    const MAX_HEIGHT = 319; // Minecraft's highest point
     
     // Create points for all the lines
     const lines: [number, number, number][][] = [
-      // Bottom perimeter outline
+      // Bottom perimeter outline at current layer
       [
-        [x, 0, z],
-        [x + sizeX, 0, z],
-        [x + sizeX, 0, z + sizeZ],
-        [x, 0, z + sizeZ],
-        [x, 0, z],
+        [x, currentLayer, z],
+        [x + CHUNK_SIZE, currentLayer, z],
+        [x + CHUNK_SIZE, currentLayer, z + CHUNK_SIZE],
+        [x, currentLayer, z + CHUNK_SIZE],
+        [x, currentLayer, z],
       ],
-      // Corner 1: Vertical line going up from the first corner
+      // Corner 1: Vertical line
       [
-        [x, 0, z],
-        [x, Math.min(MAX_HEIGHT, dimensions[1]), z]
+        [x, MIN_HEIGHT, z],
+        [x, MAX_HEIGHT, z]
       ],
-      // Corner 2: Vertical line going up from the second corner
+      // Corner 2: Vertical line
       [
-        [x + sizeX, 0, z],
-        [x + sizeX, Math.min(MAX_HEIGHT, dimensions[1]), z]
+        [x + CHUNK_SIZE, MIN_HEIGHT, z],
+        [x + CHUNK_SIZE, MAX_HEIGHT, z]
       ],
-      // Corner 3: Vertical line going up from the third corner
+      // Corner 3: Vertical line
       [
-        [x + sizeX, 0, z + sizeZ],
-        [x + sizeX, Math.min(MAX_HEIGHT, dimensions[1]), z + sizeZ]
+        [x + CHUNK_SIZE, MIN_HEIGHT, z + CHUNK_SIZE],
+        [x + CHUNK_SIZE, MAX_HEIGHT, z + CHUNK_SIZE]
       ],
-      // Corner 4: Vertical line going up from the fourth corner
+      // Corner 4: Vertical line
       [
-        [x, 0, z + sizeZ],
-        [x, Math.min(MAX_HEIGHT, dimensions[1]), z + sizeZ]
+        [x, MIN_HEIGHT, z + CHUNK_SIZE],
+        [x, MAX_HEIGHT, z + CHUNK_SIZE]
       ]
     ];
     
@@ -125,40 +124,32 @@ const ChunkGrid = ({ dimensions, activeChunk }: ChunkGridProps) => {
         lineWidth={3}
       />
     ));
-  }, [activeChunk, dimensions]);
+  }, [activeChunk, currentLayer]);
   
   // Handle clicking on a chunk
   const handleChunkClick = useCallback((chunkX: number, chunkZ: number) => {
-    if (chunkX < 0 || chunkX >= chunksX || chunkZ < 0 || chunkZ >= chunksZ) {
-      return; // Out of bounds
-    }
-    
+    // In the unlimited XZ system, we don't need bounds checking the same way
     setActiveChunk([chunkX, chunkZ]);
-  }, [chunksX, chunksZ, setActiveChunk]);
+  }, [setActiveChunk]);
   
   // Create invisible planes for chunk selection
   const chunkPlanes = useMemo(() => {
     const planes: JSX.Element[] = [];
     
-    for (let chunkX = 0; chunkX < chunksX; chunkX++) {
-      for (let chunkZ = 0; chunkZ < chunksZ; chunkZ++) {
+    // Create clickable planes for visible chunks
+    for (let chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
+      for (let chunkZ = minChunkZ; chunkZ <= maxChunkZ; chunkZ++) {
         const x = chunkX * CHUNK_SIZE;
         const z = chunkZ * CHUNK_SIZE;
-        
-        // Calculate size respecting dimensions
-        const sizeX = Math.min(CHUNK_SIZE, dimensions[0] - x);
-        const sizeZ = Math.min(CHUNK_SIZE, dimensions[2] - z);
-        
-        if (sizeX <= 0 || sizeZ <= 0) continue; // Skip if size is invalid
         
         planes.push(
           <mesh
             key={`chunk-${chunkX}-${chunkZ}`}
-            position={[x + sizeX / 2, 0, z + sizeZ / 2]}
+            position={[x + CHUNK_SIZE / 2, currentLayer, z + CHUNK_SIZE / 2]}
             rotation={[-Math.PI / 2, 0, 0]}
             onClick={() => handleChunkClick(chunkX, chunkZ)}
           >
-            <planeGeometry args={[sizeX, sizeZ]} />
+            <planeGeometry args={[CHUNK_SIZE, CHUNK_SIZE]} />
             <meshBasicMaterial transparent opacity={0} />
           </mesh>
         );
@@ -166,7 +157,7 @@ const ChunkGrid = ({ dimensions, activeChunk }: ChunkGridProps) => {
     }
     
     return planes;
-  }, [dimensions, chunksX, chunksZ, handleChunkClick]);
+  }, [minChunkX, maxChunkX, minChunkZ, maxChunkZ, currentLayer, handleChunkClick]);
   
   return (
     <>
@@ -419,6 +410,7 @@ const Scene = () => {
   const voxels = useProject(state => state.voxels);
   const dimensions = useProject(state => state.dimensions);
   const showGrid = useEditor(state => state.showGrid);
+  const currentLayer = useEditor(state => state.currentLayer); // Get current layer for grid rendering
 
   // Convert voxels Map to array for rendering
   const voxelsArray = useMemo(() => {
@@ -441,7 +433,7 @@ const Scene = () => {
       
       // Add a single red test block at origin if nothing to render
       result.push({
-        position: [25, 50, 25] as [number, number, number],
+        position: [0, 50, 0] as [number, number, number],
         blockType: "minecraft:redstone_block"
       });
     }
@@ -465,53 +457,43 @@ const Scene = () => {
       // which is handled in the BlockInteraction component
     }
   }, []);
+  
+  // Grid size should be large enough for realistic work
+  const gridSize = 1000; // 1000x1000 grid around the center
 
   return (
     <>
-      {/* Grid visualization with Y-axis limits */}
+      {/* Grid visualization - only at current layer */}
       {showGrid && (
         <>
-          {/* Main grid at y=50 (default Minecraft terrain level) */}
+          {/* Main grid at current layer level */}
           <Grid 
-            position={[0, 50, 0]} 
-            args={[dimensions[0] * 2, dimensions[2] * 2]} 
+            position={[0, currentLayer, 0]} 
+            args={[gridSize, gridSize]} 
             cellSize={1}
             cellThickness={0.5}
             cellColor="#666666"
-            sectionSize={10}
+            sectionSize={16} // Match chunk size (16x16)
             sectionThickness={1}
-            sectionColor="#888888"
-            fadeDistance={dimensions[0] * 2}
-            infiniteGrid={false}
+            sectionColor="#5050FF" // Highlight 16x16 chunks
+            fadeDistance={100}
+            infiniteGrid={true} // Allow unlimited XZ plane
           />
           
-          {/* Lower limit grid at y=-64 (Minecraft bedrock level) */}
-          <Grid 
-            position={[0, -64, 0]} 
-            args={[dimensions[0] * 2, dimensions[2] * 2]} 
-            cellSize={1}
-            cellThickness={0.2}
-            cellColor="#333333"
-            sectionSize={10}
-            sectionThickness={0.4}
-            sectionColor="#444444"
-            fadeDistance={dimensions[0] * 3}
-            infiniteGrid={false}
-          />
+          {/* Subtle reference indicators for Minecraft height limits */}
+          {currentLayer === -64 && (
+            <mesh position={[0, -64, 0]}>
+              <planeGeometry args={[gridSize, gridSize]} />
+              <meshBasicMaterial color="#FF5555" opacity={0.1} transparent={true} side={THREE.DoubleSide} />
+            </mesh>
+          )}
           
-          {/* Upper limit grid at y=319 (Minecraft build limit) */}
-          <Grid 
-            position={[0, 319, 0]} 
-            args={[dimensions[0] * 2, dimensions[2] * 2]} 
-            cellSize={1}
-            cellThickness={0.2}
-            cellColor="#AAAAFF"
-            sectionSize={10}
-            sectionThickness={0.4}
-            sectionColor="#8888FF"
-            fadeDistance={dimensions[0] * 3}
-            infiniteGrid={false}
-          />
+          {currentLayer === 319 && (
+            <mesh position={[0, 319, 0]}>
+              <planeGeometry args={[gridSize, gridSize]} />
+              <meshBasicMaterial color="#5555FF" opacity={0.1} transparent={true} side={THREE.DoubleSide} />
+            </mesh>
+          )}
         </>
       )}
       
