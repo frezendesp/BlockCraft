@@ -204,22 +204,16 @@ const SelectionBox = () => {
   const height = maxY - minY + 1;
   const depth = maxZ - minZ + 1;
   
-  const center = [
-    minX + width / 2 - 0.5,
-    minY + height / 2 - 0.5,
-    minZ + depth / 2 - 0.5
-  ];
+  // Position center
+  const centerX = minX + width / 2 - 0.5;
+  const centerY = minY + height / 2 - 0.5;
+  const centerZ = minZ + depth / 2 - 0.5;
   
   console.log(`Rendering selection box from [${minX},${minY},${minZ}] to [${maxX},${maxY},${maxZ}]`);
   console.log(`Box dimensions: ${width} x ${height} x ${depth}`);
   
-  // Cast center to the expected tuple type
-  const centerPosition: [number, number, number] = [
-    center[0], center[1], center[2]
-  ];
-  
   return (
-    <group position={centerPosition}>
+    <group position={[centerX, centerY, centerZ]}>
       {/* Selection volume */}
       <mesh>
         <boxGeometry args={[width, height, depth]} />

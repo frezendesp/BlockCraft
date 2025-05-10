@@ -2,13 +2,25 @@ import { create } from "zustand";
 import { BlockType } from "../blocks";
 import { useEditor } from "./useEditor";
 
+// Define Block Group structure
+export interface BlockGroup {
+  id: string;
+  name: string;
+  blocks: Record<string, BlockType>; // Key is position string "x,y,z", value is block type
+  origin: [number, number, number]; // Reference point for the group
+}
+
 // Define the structure of a history action
 type HistoryAction = {
-  type: "set" | "remove" | "batch";
+  type: "set" | "remove" | "batch" | "group" | "ungroup" | "moveGroup";
   positions?: string[]; // For batch operations
   position?: string;    // For single operations
   blockType?: BlockType; // Only for set operations
   affectedBlocks?: Record<string, BlockType | null>; // For batch (stores previous state)
+  groupId?: string; // For group operations
+  group?: BlockGroup; // For group creation/modification
+  oldPosition?: [number, number, number]; // For group movement
+  newPosition?: [number, number, number]; // For group movement
 };
 
 interface ProjectState {
@@ -19,11 +31,15 @@ interface ProjectState {
   // Key is a string in the format "x,y,z", value is the block type
   voxels: Record<string, BlockType>;
   
+  // Block groups
+  groups: Record<string, BlockGroup>;
+  activeGroupId: string | null;
+  
   // History for undo/redo
   history: HistoryAction[];
   historyIndex: number;
   
-  // Actions
+  // Actions - Block Operations
   initializeProject: (dimensions?: [number, number, number]) => void;
   setBlock: (x: number, y: number, z: number, blockType: BlockType) => void;
   removeBlock: (x: number, y: number, z: number) => void;
@@ -34,8 +50,20 @@ interface ProjectState {
     blockType: BlockType
   ) => void;
   clearArea: (start: [number, number, number], end: [number, number, number]) => void;
+  
+  // Actions - Group Operations
+  createGroup: (start: [number, number, number], end: [number, number, number], name?: string) => string;
+  removeGroup: (groupId: string) => void;
+  getGroupById: (groupId: string) => BlockGroup | null;
+  moveGroup: (groupId: string, offset: [number, number, number]) => void;
+  rotateGroup: (groupId: string, axis: 'x' | 'y' | 'z', degrees: number) => void;
+  setActiveGroup: (groupId: string | null) => void;
+  
+  // Actions - History
   undo: () => void;
   redo: () => void;
+  
+  // Actions - File Operations
   saveProject: () => Blob;
   loadProject: (jsonData: string) => void;
 }
