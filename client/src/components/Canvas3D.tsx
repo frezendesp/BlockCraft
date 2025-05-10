@@ -375,9 +375,42 @@ const BlockInteraction = () => {
     } else if (activeTool === "remove") {
       removeBlock(x, y, z);
       lastPlacedPosition.current = hoveredPosition;
+    } else if (activeTool === "select") {
+      // Selection tool behavior
+      const { selectionStart } = useEditor.getState();
+      
+      if (!selectionStart) {
+        // Start new selection
+        console.log(`Selection start: [${x}, ${y}, ${z}]`);
+        useEditor.setState({ selectionStart: [x, y, z] });
+      } else {
+        // Complete selection
+        console.log(`Selection end: [${x}, ${y}, ${z}]`);
+        useEditor.setState({ selectionEnd: [x, y, z] });
+      }
+      return; // Don't start dragging in selection mode
+    } else if (activeTool === "fill") {
+      // Fill tool requires both start and end points
+      const { selectionStart, selectionEnd } = useEditor.getState();
+      
+      if (selectionStart && selectionEnd) {
+        // Execute fill with selected block type
+        const { fillArea } = useProject.getState();
+        fillArea(selectionStart, selectionEnd, selectedBlockType);
+        
+        // Clear selection after filling
+        useEditor.setState({ 
+          selectionStart: null, 
+          selectionEnd: null 
+        });
+        console.log(`Filled area from [${selectionStart}] to [${selectionEnd}] with ${selectedBlockType}`);
+      } else {
+        console.log("Select an area first before using fill tool");
+      }
+      return;
     }
     
-    // If shift is pressed, start dragging mode
+    // If shift is pressed, start dragging mode (for place and remove tools)
     if (isShiftPressed) {
       setIsDragging(true);
     }
