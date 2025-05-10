@@ -101,9 +101,17 @@ export const useProject = create<ProjectState>((set, get) => ({
     const newHistory = history.slice(0, historyIndex + 1);
     newHistory.push(newAction);
     
+    // Debug log
+    console.log(`Setting block at [${x},${y},${z}], type: ${blockType}`);
+    
     // Update state
+    const newVoxels = { ...voxels, [posKey]: blockType };
+    
+    // Debug: Count blocks
+    console.log(`Total blocks after adding: ${Object.keys(newVoxels).length}`);
+    
     set({
-      voxels: { ...voxels, [posKey]: blockType },
+      voxels: newVoxels,
       history: newHistory,
       historyIndex: historyIndex + 1
     });

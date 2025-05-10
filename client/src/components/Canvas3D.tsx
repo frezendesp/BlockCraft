@@ -249,11 +249,17 @@ const Voxel = ({
     }
   }, [hovered]);
 
+  // Debug logging
+  useEffect(() => {
+    console.log(`Rendering voxel at [${position.join(',')}] with color ${color}`);
+  }, [position, color]);
+
   return (
     <Box
       ref={mesh}
       args={[0.95, 0.95, 0.95]} // Slightly smaller than 1 to see edges
       position={position}
+      name="voxel" // Important for raycasting
       onClick={onClick}
       onPointerOver={(e) => {
         e.stopPropagation();
@@ -265,6 +271,8 @@ const Voxel = ({
         color={color} 
         opacity={hovered ? 0.8 : 1}
         transparent={hovered}
+        roughness={0.7}
+        metalness={0.2}
       />
     </Box>
   );
@@ -499,14 +507,15 @@ export const Canvas3D = () => {
   return (
     <div className="w-full h-full">
       <Canvas
-        camera={{ position: [10, 10, 10], fov: 75, near: 0.1, far: 1000 }}
+        camera={{ position: [20, 20, 20], fov: 60, near: 0.1, far: 1000 }}
         gl={{ antialias: true }}
       >
         <color attach="background" args={["#1a1a1a"]} />
         
         {/* Lighting */}
-        <ambientLight intensity={0.3} />
+        <ambientLight intensity={0.5} />
         <directionalLight position={[10, 10, 5]} intensity={1} castShadow />
+        <directionalLight position={[-10, 5, -5]} intensity={0.7} />
         
         {/* Scene content */}
         <Scene />
@@ -514,13 +523,21 @@ export const Canvas3D = () => {
         {/* Ghost block preview */}
         <GhostBlock />
         
+        {/* Debug placeholder (remove later) */}
+        <Box position={[50, 50, 50]} args={[3, 3, 3]}>
+          <meshStandardMaterial color="#FF0000" />
+        </Box>
+        
         {/* Controls */}
         <OrbitControls 
           enableZoom={true}
           enablePan={true}
           enableRotate={true}
-          minDistance={2}
+          minDistance={5}
           maxDistance={100}
+          dampingFactor={0.1}
+          rotateSpeed={0.7}
+          target={[50, 50, 50]} // Center the view on the middle of the grid
         />
       </Canvas>
     </div>
