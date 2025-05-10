@@ -98,31 +98,31 @@ export const ProjectControls = () => {
   return (
     <div className="flex space-x-2">
       <button
-        className="px-3 py-1 bg-card rounded-md"
+        className="px-3 py-1 bg-card rounded-md hover:bg-card/80 transition-all duration-150"
         onClick={() => setShowNewProjectModal(true)}
       >
-        New
+        Novo
       </button>
       
       <button
-        className="px-3 py-1 bg-card rounded-md"
+        className="px-3 py-1 bg-card rounded-md hover:bg-card/80 transition-all duration-150"
         onClick={handleSaveProject}
       >
-        Save
+        Salvar
       </button>
       
       <button
-        className="px-3 py-1 bg-card rounded-md"
+        className="px-3 py-1 bg-card rounded-md hover:bg-card/80 transition-all duration-150"
         onClick={handleLoadProjectClick}
       >
-        Load
+        Carregar
       </button>
       
       <button
-        className="px-3 py-1 bg-primary text-primary-foreground rounded-md"
+        className="px-3 py-1 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-all duration-150"
         onClick={() => setShowExportModal(true)}
       >
-        Export
+        Exportar
       </button>
       
       {/* Hidden file input for load project */}
@@ -138,10 +138,10 @@ export const ProjectControls = () => {
       {showNewProjectModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-card p-4 rounded-md shadow-lg w-80">
-            <h2 className="text-lg font-bold mb-4">New Project</h2>
+            <h2 className="text-lg font-bold mb-4">Novo Projeto</h2>
             
             <div className="mb-4">
-              <label className="block mb-1">Width (X):</label>
+              <label className="block mb-1">Largura (X):</label>
               <input
                 type="number"
                 className="w-full p-2 bg-background border border-border rounded"
@@ -153,7 +153,7 @@ export const ProjectControls = () => {
             </div>
             
             <div className="mb-4">
-              <label className="block mb-1">Height (Y):</label>
+              <label className="block mb-1">Altura (Y):</label>
               <input
                 type="number"
                 className="w-full p-2 bg-background border border-border rounded"
@@ -165,7 +165,7 @@ export const ProjectControls = () => {
             </div>
             
             <div className="mb-4">
-              <label className="block mb-1">Depth (Z):</label>
+              <label className="block mb-1">Profundidade (Z):</label>
               <input
                 type="number"
                 className="w-full p-2 bg-background border border-border rounded"

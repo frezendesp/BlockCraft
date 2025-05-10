@@ -44,30 +44,35 @@ export const StatusBar = () => {
         {/* Hovered block information */}
         {hoveredBlockType && (
           <div className="text-muted-foreground">
-            Block: <span className="text-primary">{formatBlockType(hoveredBlockType)}</span>
+            Bloco: <span className="text-primary">{formatBlockType(hoveredBlockType)}</span>
           </div>
         )}
         
         {/* Selected Block Type */}
         <div className="text-muted-foreground">
-          Selected: <span className="font-medium text-primary">{formatBlockType(selectedBlockType)}</span>
+          Selecionado: <span className="font-medium text-primary">{formatBlockType(selectedBlockType)}</span>
         </div>
         
         {/* Current Tool */}
         <div className="text-muted-foreground">
-          Tool: <span className="font-medium text-primary capitalize">{activeTool}</span>
+          Ferramenta: <span className="font-medium text-primary capitalize">
+            {activeTool === 'place' ? 'colocar' : 
+             activeTool === 'remove' ? 'remover' : 
+             activeTool === 'fill' ? 'preencher' : 
+             activeTool === 'select' ? 'selecionar' : activeTool}
+          </span>
         </div>
       </div>
       
       <div className="flex space-x-4">
         {/* Dimensions */}
         <div className="text-muted-foreground">
-          Dimensions: {dimensions[0]} × {dimensions[1]} × {dimensions[2]}
+          Dimensões: {dimensions[0]} × {dimensions[1]} × {dimensions[2]}
         </div>
         
         {/* Block count */}
         <div className="text-muted-foreground">
-          {blockCount} block{blockCount !== 1 ? "s" : ""} placed
+          {blockCount} bloco{blockCount !== 1 ? "s" : ""} colocado{blockCount !== 1 ? "s" : ""}
         </div>
       </div>
     </div>

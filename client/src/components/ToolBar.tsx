@@ -18,10 +18,10 @@ export const ToolBar = () => {
 
   // Tool definitions
   const tools = [
-    { id: "place", label: "Place Block", icon: "🧱" },
-    { id: "remove", label: "Remove Block", icon: "🧹" },
-    { id: "fill", label: "Fill Area", icon: "🪣" },
-    { id: "select", label: "Select", icon: "📏" },
+    { id: "place", label: "Colocar Bloco", icon: "🧱" },
+    { id: "remove", label: "Remover Bloco", icon: "🧹" },
+    { id: "fill", label: "Preencher Área", icon: "🪣" },
+    { id: "select", label: "Selecionar", icon: "📏" },
   ] as const;
 
   return (
@@ -79,7 +79,7 @@ export const ToolBar = () => {
             <path d="M9 3v18"></path>
             <path d="M15 3v18"></path>
           </svg>
-          Grid{showGrid && <span className="ml-1 text-xs">✓</span>}
+          Grade{showGrid && <span className="ml-1 text-xs">✓</span>}
         </span>
       </button>
       
@@ -121,7 +121,7 @@ export const ToolBar = () => {
             <path d="M3 7v6h6"></path>
             <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path>
           </svg>
-          Undo
+          Desfazer
         </button>
         <button
           className="px-3 py-1 rounded-md bg-card disabled:opacity-50 transition-all duration-150 flex items-center hover:bg-card/80 disabled:hover:bg-card"
@@ -135,7 +135,7 @@ export const ToolBar = () => {
             <path d="M21 7v6h-6"></path>
             <path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"></path>
           </svg>
-          Redo
+          Refazer
         </button>
       </div>
     </div>
