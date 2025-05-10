@@ -1,5 +1,5 @@
-import { useRef, useState, useEffect, useMemo } from "react";
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { useRef, useState, useEffect, useMemo, useCallback } from "react";
+import { Canvas, useFrame, useThree, ThreeEvent } from "@react-three/fiber";
 import { OrbitControls, Grid, Box } from "@react-three/drei";
 import * as THREE from "three";
 import { useEditor } from "@/lib/stores/useEditor";
@@ -7,17 +7,23 @@ import { useProject } from "@/lib/stores/useProject";
 import { BlockType } from "@/lib/blocks";
 
 // Helper component to render a single voxel
-const Voxel = ({ position, blockType, onClick }) => {
+const Voxel = ({ 
+  position, 
+  blockType, 
+  onClick 
+}: { 
+  position: [number, number, number]; 
+  blockType: BlockType; 
+  onClick: () => void 
+}) => {
   const [hovered, setHovered] = useState(false);
   const mesh = useRef<THREE.Mesh>(null);
-  const { selectedBlockType, activeTool } = useEditor(state => ({ 
-    selectedBlockType: state.selectedBlockType,
-    activeTool: state.activeTool 
-  }));
+  const selectedBlockType = useEditor(state => state.selectedBlockType);
+  const activeTool = useEditor(state => state.activeTool);
 
   // Generate color based on blockType
   const color = useMemo(() => {
-    const colors = {
+    const colors: Record<string, string> = {
       "minecraft:stone": "#888888",
       "minecraft:dirt": "#8B4513",
       "minecraft:grass_block": "#567D46",
@@ -94,7 +100,7 @@ const BlockInteraction = () => {
   });
 
   // Handle block placement on click
-  const handleClick = (e) => {
+  const handleClick = (e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation();
     if (!hoveredPosition) return;
 
@@ -117,22 +123,24 @@ const BlockInteraction = () => {
 
 // Scene component to render all voxels
 const Scene = () => {
-  const { voxels, dimensions } = useProject(state => ({ 
-    voxels: state.voxels,
-    dimensions: state.dimensions
-  }));
-  const { showGrid } = useEditor();
+  // Use selectors to avoid infinite loops
+  const voxels = useProject(state => state.voxels);
+  const dimensions = useProject(state => state.dimensions);
+  const showGrid = useEditor(state => state.showGrid);
 
   // Convert voxels Map to array for rendering
   const voxelsArray = useMemo(() => {
     return Object.entries(voxels).map(([key, blockType]) => {
       const [x, y, z] = key.split(',').map(Number);
-      return { position: [x, y, z], blockType };
+      return { 
+        position: [x, y, z] as [number, number, number], 
+        blockType 
+      };
     });
   }, [voxels]);
 
   // Handle voxel click events
-  const handleVoxelClick = (position) => {
+  const handleVoxelClick = useCallback((position: [number, number, number]) => {
     const [x, y, z] = position;
     const { activeTool, selectedBlockType } = useEditor.getState();
     const { setBlock, removeBlock } = useProject.getState();
@@ -143,7 +151,7 @@ const Scene = () => {
       // For placement, we actually need to check adjacency
       // which is handled in the BlockInteraction component
     }
-  };
+  }, []);
 
   return (
     <>
@@ -189,9 +197,9 @@ const Scene = () => {
       {voxelsArray.map((voxel, index) => (
         <Voxel
           key={`${voxel.position.join(',')}`}
-          position={voxel.position}
+          position={voxel.position as [number, number, number]}
           blockType={voxel.blockType}
-          onClick={() => handleVoxelClick(voxel.position)}
+          onClick={() => handleVoxelClick(voxel.position as [number, number, number])}
         />
       ))}
 
