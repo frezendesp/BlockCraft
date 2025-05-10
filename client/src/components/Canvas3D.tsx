@@ -255,26 +255,38 @@ const Voxel = ({
   }, [position, color]);
 
   return (
-    <Box
-      ref={mesh}
-      args={[0.95, 0.95, 0.95]} // Slightly smaller than 1 to see edges
-      position={position}
-      name="voxel" // Important for raycasting
-      onClick={onClick}
-      onPointerOver={(e) => {
-        e.stopPropagation();
-        setHovered(true);
-      }}
-      onPointerOut={() => setHovered(false)}
-    >
-      <meshStandardMaterial 
-        color={color} 
-        opacity={hovered ? 0.8 : 1}
-        transparent={hovered}
-        roughness={0.7}
-        metalness={0.2}
-      />
-    </Box>
+    <group position={position}>
+      {/* Main block */}
+      <Box
+        ref={mesh}
+        args={[0.96, 0.96, 0.96]} // Block with outline effect
+        name="voxel" // Important for raycasting
+        onClick={onClick}
+        onPointerOver={(e) => {
+          e.stopPropagation();
+          setHovered(true);
+        }}
+        onPointerOut={() => setHovered(false)}
+      >
+        <meshStandardMaterial 
+          color={color} 
+          opacity={hovered ? 0.8 : 1}
+          transparent={hovered}
+          roughness={0.5}
+          metalness={0.1}
+        />
+      </Box>
+      
+      {/* Outline wireframe */}
+      <Box args={[1.001, 1.001, 1.001]}>
+        <meshBasicMaterial 
+          color="black" 
+          wireframe={true} 
+          opacity={0.2} 
+          transparent={true}
+        />
+      </Box>
+    </group>
   );
 };
 
@@ -509,17 +521,51 @@ const GhostBlock = () => {
 
   if (!hoveredPosition || activeTool !== 'place') return null;
 
+  // Get color based on block type (similar to the Voxel component)
+  const color = useMemo(() => {
+    const colors: Record<string, string> = {
+      "minecraft:stone": "#888888",
+      "minecraft:dirt": "#8B4513",
+      "minecraft:grass_block": "#4CAF50",
+      "minecraft:oak_planks": "#B8814B",
+      "minecraft:oak_log": "#8B4513",
+      "minecraft:glass": "#E0FFFF",
+      "minecraft:water": "#3333FF",
+      "minecraft:lava": "#FF5500",
+      "minecraft:sand": "#F0E68C",
+      "minecraft:gravel": "#808080",
+      "minecraft:gold_block": "#FFD700",
+      "minecraft:iron_block": "#C0C0C0",
+      "minecraft:diamond_block": "#00FFFF",
+      "minecraft:redstone_block": "#FF0000",
+      "minecraft:emerald_block": "#00FF00",
+    };
+    
+    // Fallback to magenta for unknown blocks
+    return colors[selectedBlockType] || "#FF00FF";
+  }, [selectedBlockType]);
+
   return (
-    <Box
-      args={[1, 1, 1]}
-      position={hoveredPosition}
-    >
-      <meshStandardMaterial
-        color={selectedBlockType === "minecraft:stone" ? "#888888" : "#FF00FF"}
-        opacity={0.5}
-        transparent={true}
-      />
-    </Box>
+    <group position={hoveredPosition}>
+      {/* Ghost block */}
+      <Box args={[0.95, 0.95, 0.95]}>
+        <meshStandardMaterial
+          color={color}
+          opacity={0.6}
+          transparent={true}
+        />
+      </Box>
+      
+      {/* Wireframe outline */}
+      <Box args={[1.01, 1.01, 1.01]}>
+        <meshBasicMaterial
+          color="white"
+          wireframe={true}
+          opacity={0.8}
+          transparent={true}
+        />
+      </Box>
+    </group>
   );
 };
 
@@ -552,10 +598,10 @@ export const Canvas3D = () => {
           enablePan={true}
           enableRotate={true}
           minDistance={5}
-          maxDistance={100}
+          maxDistance={200}
           dampingFactor={0.1}
           rotateSpeed={0.7}
-          target={[10, 10, 10]} // Center view on the test blocks
+          target={[25, 50, 25]} // Center view on default build area
         />
       </Canvas>
     </div>

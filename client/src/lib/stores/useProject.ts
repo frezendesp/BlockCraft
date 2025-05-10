@@ -73,20 +73,26 @@ export const useProject = create<ProjectState>((set, get) => ({
   setBlock: (x, y, z, blockType) => {
     const { voxels, dimensions, history, historyIndex } = get();
     
+    // Debug information
+    console.log(`Attempting to place block at [${x}, ${y}, ${z}] of type ${blockType}`);
+    console.log(`Current dimensions: ${dimensions.join(' x ')}`);
+    
     // Check if coordinates are valid (allowing Y to be between -64 and 319 for Minecraft)
     if (
       x < 0 || x >= dimensions[0] ||
       y < -64 || y > 319 || // Minecraft Y range: -64 to 319
       z < 0 || z >= dimensions[2]
     ) {
+      console.warn(`Block placement out of bounds: [${x}, ${y}, ${z}]`);
       return;
     }
     
     const posKey = `${x},${y},${z}`;
     const existingBlock = voxels[posKey];
     
-    // Don't do anything if it's the same block
+    // Check for duplicate block
     if (existingBlock === blockType) {
+      console.log(`Skipping duplicate block at [${x}, ${y}, ${z}]`);
       return;
     }
     
