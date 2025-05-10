@@ -148,7 +148,21 @@ export const Canvas2D = () => {
       }
     }
 
-    // Draw blocks in current layer
+    // Track positions that have adjacent blocks for marking with X
+    const adjacentBlockPositions: Record<string, boolean> = {};
+    
+    // First pass: identify blocks in adjacent layers (y-1 and y+1)
+    for (const [posKey, blockType] of Object.entries(voxels)) {
+      const [x, y, z] = posKey.split(',').map(Number);
+      
+      // Check if this block is in an adjacent layer (above or below current)
+      if (y === currentLayer + 1 || y === currentLayer - 1) {
+        // Store the XZ position for marking
+        adjacentBlockPositions[`${x},${z}`] = true;
+      }
+    }
+    
+    // Second pass: draw blocks in current layer
     for (const [posKey, blockType] of Object.entries(voxels)) {
       const [x, y, z] = posKey.split(',').map(Number);
       
@@ -165,7 +179,40 @@ export const Canvas2D = () => {
         ctx.strokeStyle = '#000000';
         ctx.lineWidth = 1;
         ctx.strokeRect(pixelX, pixelY, scale, scale);
+        
+        // Remove this position from adjacent markers, as it already has a block
+        delete adjacentBlockPositions[`${x},${z}`];
       }
+    }
+    
+    // Third pass: draw X markers for blocks in adjacent layers
+    for (const xzPos of Object.keys(adjacentBlockPositions)) {
+      const [x, z] = xzPos.split(',').map(Number);
+      
+      // Calculate position in canvas
+      const pixelX = startX + x * scale;
+      const pixelY = startY + z * scale;
+      
+      // Draw a light background for the X marker
+      ctx.fillStyle = 'rgba(255, 200, 200, 0.4)'; // Light red with transparency
+      ctx.fillRect(pixelX, pixelY, scale, scale);
+      
+      // Draw a subtle border
+      ctx.strokeStyle = '#FF5555';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(pixelX, pixelY, scale, scale);
+      
+      // Draw the X marker
+      ctx.strokeStyle = '#FF3333'; // Red X
+      ctx.lineWidth = 2;
+      
+      // Draw the X
+      ctx.beginPath();
+      ctx.moveTo(pixelX + scale * 0.2, pixelY + scale * 0.2);
+      ctx.lineTo(pixelX + scale * 0.8, pixelY + scale * 0.8);
+      ctx.moveTo(pixelX + scale * 0.8, pixelY + scale * 0.2);
+      ctx.lineTo(pixelX + scale * 0.2, pixelY + scale * 0.8);
+      ctx.stroke();
     }
 
     // Draw coordinates
