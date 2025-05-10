@@ -82,8 +82,8 @@ const ChunkGrid = ({ dimensions, activeChunk }: ChunkGridProps) => {
     const sizeX = Math.min(CHUNK_SIZE, dimensions[0] - x);
     const sizeZ = Math.min(CHUNK_SIZE, dimensions[2] - z);
     
-    // Max height for vertical lines
-    const MAX_HEIGHT = 254;
+    // Max height for vertical lines (Minecraft's max height)
+    const MAX_HEIGHT = 319;
     
     // Create points for all the lines
     const lines: [number, number, number][][] = [

@@ -41,8 +41,9 @@ interface ProjectState {
 }
 
 export const useProject = create<ProjectState>((set, get) => ({
-  // Default dimensions (100x100x100)
-  dimensions: [100, 100, 100],
+  // Default dimensions [width(X), height(Y), depth(Z)]
+  // Using Minecraft dimensions: X/Z (horizontal plane) 100x100, Y (vertical) from -64 to 319 = 384 total
+  dimensions: [100, 384, 100],
   
   // Start with an empty voxel space
   voxels: {},
@@ -72,10 +73,10 @@ export const useProject = create<ProjectState>((set, get) => ({
   setBlock: (x, y, z, blockType) => {
     const { voxels, dimensions, history, historyIndex } = get();
     
-    // Check if coordinates are valid
+    // Check if coordinates are valid (allowing Y to be between -64 and 319 for Minecraft)
     if (
       x < 0 || x >= dimensions[0] ||
-      y < 0 || y >= dimensions[1] ||
+      y < -64 || y > 319 || // Minecraft Y range: -64 to 319
       z < 0 || z >= dimensions[2]
     ) {
       return;
@@ -118,10 +119,10 @@ export const useProject = create<ProjectState>((set, get) => ({
   removeBlock: (x, y, z) => {
     const { voxels, dimensions, history, historyIndex } = get();
     
-    // Check if coordinates are valid
+    // Check if coordinates are valid (allowing Y to be between -64 and 319 for Minecraft)
     if (
       x < 0 || x >= dimensions[0] ||
-      y < 0 || y >= dimensions[1] ||
+      y < -64 || y > 319 || // Minecraft Y range: -64 to 319
       z < 0 || z >= dimensions[2]
     ) {
       return;
@@ -167,10 +168,10 @@ export const useProject = create<ProjectState>((set, get) => ({
   getBlock: (x, y, z) => {
     const { voxels, dimensions } = get();
     
-    // Check if coordinates are valid
+    // Check if coordinates are valid (allowing Y to be between -64 and 319 for Minecraft)
     if (
       x < 0 || x >= dimensions[0] ||
-      y < 0 || y >= dimensions[1] ||
+      y < -64 || y > 319 || // Minecraft Y range: -64 to 319
       z < 0 || z >= dimensions[2]
     ) {
       return null;
