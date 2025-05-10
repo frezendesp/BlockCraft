@@ -180,6 +180,72 @@ const ChunkGrid = ({ dimensions, activeChunk }: ChunkGridProps) => {
   );
 };
 
+// ActiveGroupHighlight component to highlight the active group
+const ActiveGroupHighlight = () => {
+  const activeGroupId = useProject(state => state.activeGroupId);
+  const groups = useProject(state => state.groups);
+  
+  // Return null if no group is active
+  if (!activeGroupId || !groups[activeGroupId]) return null;
+  
+  const activeGroup = groups[activeGroupId];
+  
+  // Get the bounds of the group
+  let minX = Infinity, minY = Infinity, minZ = Infinity;
+  let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
+  
+  // Find min/max boundaries from all blocks in the group
+  Object.keys(activeGroup.blocks).forEach(posKey => {
+    const [x, y, z] = posKey.split(',').map(Number);
+    
+    minX = Math.min(minX, x);
+    minY = Math.min(minY, y);
+    minZ = Math.min(minZ, z);
+    
+    maxX = Math.max(maxX, x);
+    maxY = Math.max(maxY, y);
+    maxZ = Math.max(maxZ, z);
+  });
+  
+  // Calculate dimensions
+  const width = maxX - minX + 1;
+  const height = maxY - minY + 1;
+  const depth = maxZ - minZ + 1;
+  
+  // Calculate center for positioning
+  const centerX = minX + width / 2 - 0.5;
+  const centerY = minY + height / 2 - 0.5;
+  const centerZ = minZ + depth / 2 - 0.5;
+  
+  console.log(`Highlighting group ${activeGroup.name} with bounds [${minX},${minY},${minZ}] to [${maxX},${maxY},${maxZ}]`);
+  
+  return (
+    <group position={[centerX, centerY, centerZ]}>
+      {/* Group volume */}
+      <mesh>
+        <boxGeometry args={[width, height, depth]} />
+        <meshBasicMaterial 
+          color="#FF9900" 
+          opacity={0.15} 
+          transparent={true} 
+          side={THREE.DoubleSide} 
+        />
+      </mesh>
+      
+      {/* Group wireframe */}
+      <mesh>
+        <boxGeometry args={[width, height, depth]} />
+        <meshBasicMaterial 
+          color="#FF9900" 
+          wireframe={true} 
+          opacity={0.8}
+          transparent={true}
+        />
+      </mesh>
+    </group>
+  );
+};
+
 // SelectionBox component to visualize selected area
 const SelectionBox = () => {
   const selectionStart = useEditor(state => state.selectionStart);
@@ -723,6 +789,9 @@ export const Canvas3D = () => {
         
         {/* Selection box visualization */}
         <SelectionBox />
+        
+        {/* Active group highlight */}
+        <ActiveGroupHighlight />
         
         {/* Ghost block preview */}
         <GhostBlock />

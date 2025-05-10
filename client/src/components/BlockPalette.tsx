@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useEditor } from "../lib/stores/useEditor";
 import { blockCategories, blocksByCategory, BlockType } from "../lib/blocks";
+import { GroupControls } from "./GroupControls";
 
 export const BlockPalette = () => {
   const { selectedBlockType, setSelectedBlockType } = useEditor();
@@ -138,6 +139,9 @@ export const BlockPalette = () => {
           </div>
         )}
       </div>
+      
+      {/* Group controls section */}
+      <GroupControls />
       
       {/* Custom block input */}
       <div className="p-2 border-t border-border">

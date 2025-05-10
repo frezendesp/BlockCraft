@@ -4,14 +4,27 @@ import { useProject } from "../lib/stores/useProject";
 
 export const StatusBar = () => {
   const { hoveredPosition, selectedBlockType, activeTool } = useEditor();
-  const { voxels, dimensions, getBlock } = useProject();
+  const { voxels, dimensions, getBlock, groups, activeGroupId, getGroupById } = useProject();
   const [blockCount, setBlockCount] = useState(0);
   const [hoveredBlockType, setHoveredBlockType] = useState<string | null>(null);
+  const [groupBlockCount, setGroupBlockCount] = useState(0);
+  
+  // Get the active group, if any
+  const activeGroup = activeGroupId ? getGroupById(activeGroupId) : null;
   
   // Calculate block statistics
   useEffect(() => {
     setBlockCount(Object.keys(voxels).length);
   }, [voxels]);
+  
+  // Calculate active group statistics
+  useEffect(() => {
+    if (activeGroup) {
+      setGroupBlockCount(Object.keys(activeGroup.blocks).length);
+    } else {
+      setGroupBlockCount(0);
+    }
+  }, [activeGroup]);
   
   // Get block type at hovered position
   useEffect(() => {
