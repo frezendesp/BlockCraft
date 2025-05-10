@@ -7,8 +7,7 @@ export const ProjectControls = () => {
     initializeProject, 
     loadProject, 
     saveProject,
-    dimensions, 
-    setDimensions 
+    dimensions
   } = useProject();
   
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
@@ -178,16 +177,16 @@ export const ProjectControls = () => {
             
             <div className="flex justify-end space-x-2">
               <button
-                className="px-3 py-1 bg-card rounded-md"
+                className="px-3 py-1 bg-card rounded-md hover:bg-card/80 transition-all duration-150"
                 onClick={() => setShowNewProjectModal(false)}
               >
-                Cancel
+                Cancelar
               </button>
               <button
-                className="px-3 py-1 bg-primary text-primary-foreground rounded-md"
+                className="px-3 py-1 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-all duration-150"
                 onClick={handleNewProject}
               >
-                Create
+                Criar
               </button>
             </div>
           </div>
@@ -198,10 +197,10 @@ export const ProjectControls = () => {
       {showExportModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-card p-4 rounded-md shadow-lg w-80">
-            <h2 className="text-lg font-bold mb-4">Export to Minecraft</h2>
+            <h2 className="text-lg font-bold mb-4">Exportar para Minecraft</h2>
             
             <div className="mb-4">
-              <label className="block mb-1">Start X:</label>
+              <label className="block mb-1">Início X:</label>
               <input
                 type="number"
                 className="w-full p-2 bg-background border border-border rounded"
@@ -211,7 +210,7 @@ export const ProjectControls = () => {
             </div>
             
             <div className="mb-4">
-              <label className="block mb-1">Start Y:</label>
+              <label className="block mb-1">Início Y:</label>
               <input
                 type="number"
                 className="w-full p-2 bg-background border border-border rounded"
@@ -221,7 +220,7 @@ export const ProjectControls = () => {
             </div>
             
             <div className="mb-4">
-              <label className="block mb-1">Start Z:</label>
+              <label className="block mb-1">Início Z:</label>
               <input
                 type="number"
                 className="w-full p-2 bg-background border border-border rounded"
@@ -231,7 +230,7 @@ export const ProjectControls = () => {
             </div>
             
             <div className="mb-4">
-              <label className="block mb-1">Filename:</label>
+              <label className="block mb-1">Nome do arquivo:</label>
               <input
                 type="text"
                 className="w-full p-2 bg-background border border-border rounded"
@@ -242,16 +241,16 @@ export const ProjectControls = () => {
             
             <div className="flex justify-end space-x-2">
               <button
-                className="px-3 py-1 bg-card rounded-md"
+                className="px-3 py-1 bg-card rounded-md hover:bg-card/80 transition-all duration-150"
                 onClick={() => setShowExportModal(false)}
               >
-                Cancel
+                Cancelar
               </button>
               <button
-                className="px-3 py-1 bg-primary text-primary-foreground rounded-md"
+                className="px-3 py-1 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-all duration-150"
                 onClick={handleExport}
               >
-                Export
+                Exportar
               </button>
             </div>
           </div>
