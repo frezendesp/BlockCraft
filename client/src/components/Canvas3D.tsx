@@ -800,7 +800,10 @@ const GhostBlock = () => {
 // Main Canvas3D component
 export const Canvas3D = () => {
   return (
-    <div className="w-full h-full">
+    <div className="w-full h-full relative">
+      <div className="absolute bottom-3 left-3 bg-black/50 text-white p-2 text-sm rounded z-10">
+        Clique para colocar ou remover blocos diretamente na visão 3D
+      </div>
       <Canvas
         camera={{ position: [20, 20, 20], fov: 75, near: 0.1, far: 1000 }}
         gl={{ antialias: true }}
