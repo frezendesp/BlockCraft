@@ -400,31 +400,40 @@ export const Canvas2D = () => {
     return false;
   };
 
+  // Minecraft height limits
+  const MIN_HEIGHT = -64;
+  const MAX_HEIGHT = 319;
+
   // Handle key press for layer navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'ArrowUp' || e.key === 'PageUp') {
         // Move one layer up
-        setCurrentLayer(Math.min(currentLayer + 1, dimensions[1] - 1));
+        setCurrentLayer(Math.min(currentLayer + 1, MAX_HEIGHT));
       } else if (e.key === 'ArrowDown' || e.key === 'PageDown') {
         // Move one layer down
-        setCurrentLayer(Math.max(currentLayer - 1, 0));
+        setCurrentLayer(Math.max(currentLayer - 1, MIN_HEIGHT));
       }
     };
     
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentLayer, dimensions, setCurrentLayer]);
+  }, [currentLayer, setCurrentLayer]);
 
   // Layer controls component
   const LayerControls = () => {
     return (
       <div className="absolute right-4 top-4 bg-background border border-border rounded-md p-2">
-        <div className="text-center mb-2">Layer Y: {currentLayer}</div>
+        <div className="text-center mb-2">
+          <span className="font-semibold">Camada Y: {currentLayer}</span>
+          <div className="text-xs text-muted-foreground">
+            ({MIN_HEIGHT} a {MAX_HEIGHT})
+          </div>
+        </div>
         <input
           type="range"
-          min={0}
-          max={dimensions[1] - 1}
+          min={MIN_HEIGHT}
+          max={MAX_HEIGHT}
           value={currentLayer}
           onChange={(e) => setCurrentLayer(parseInt(e.target.value))}
           className="w-full"
@@ -432,17 +441,17 @@ export const Canvas2D = () => {
         <div className="grid grid-cols-2 gap-2 mt-2">
           <button
             className="bg-primary text-primary-foreground px-2 py-1 rounded disabled:opacity-50"
-            onClick={() => setCurrentLayer(Math.min(currentLayer + 1, dimensions[1] - 1))}
-            disabled={currentLayer >= dimensions[1] - 1}
+            onClick={() => setCurrentLayer(Math.min(currentLayer + 1, MAX_HEIGHT))}
+            disabled={currentLayer >= MAX_HEIGHT}
           >
-            Up
+            Acima
           </button>
           <button
             className="bg-primary text-primary-foreground px-2 py-1 rounded disabled:opacity-50"
-            onClick={() => setCurrentLayer(Math.max(currentLayer - 1, 0))}
-            disabled={currentLayer <= 0}
+            onClick={() => setCurrentLayer(Math.max(currentLayer - 1, MIN_HEIGHT))}
+            disabled={currentLayer <= MIN_HEIGHT}
           >
-            Down
+            Abaixo
           </button>
         </div>
       </div>

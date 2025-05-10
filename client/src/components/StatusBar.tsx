@@ -29,13 +29,34 @@ export const StatusBar = () => {
     return blockType.replace('minecraft:', '').replace(/_/g, ' ');
   };
   
+  // Minecraft height limits for visual indication
+  const MIN_HEIGHT = -64;
+  const MAX_HEIGHT = 319;
+  
+  // Get height level indicator color
+  const getHeightIndicatorColor = (y: number) => {
+    if (y >= 256) return "text-blue-500"; // High altitude
+    if (y >= 192) return "text-cyan-500"; // Very high
+    if (y >= 128) return "text-green-500"; // High
+    if (y >= 64) return "text-lime-500"; // Ground level
+    if (y >= 0) return "text-yellow-500"; // Underground
+    if (y >= -32) return "text-orange-500"; // Deep underground
+    return "text-red-500"; // Deepslate level
+  };
+  
   return (
     <div className="flex justify-between items-center p-2 bg-card border-t border-border text-sm">
       <div className="flex space-x-4">
-        {/* Coordinates */}
-        <div className="text-muted-foreground">
+        {/* Coordinates with height indicator */}
+        <div className="text-muted-foreground flex items-center">
           {hoveredPosition ? (
-            <>X: {hoveredPosition[0]}, Y: {hoveredPosition[1]}, Z: {hoveredPosition[2]}</>
+            <>
+              <span>X: {hoveredPosition[0]},</span>
+              <span className={`mx-1 ${getHeightIndicatorColor(hoveredPosition[1])}`}>
+                Y: {hoveredPosition[1]}
+              </span>
+              <span>, Z: {hoveredPosition[2]}</span>
+            </>
           ) : (
             <>X: -, Y: -, Z: -</>
           )}
@@ -65,9 +86,9 @@ export const StatusBar = () => {
       </div>
       
       <div className="flex space-x-4">
-        {/* Dimensions */}
+        {/* Height range */}
         <div className="text-muted-foreground">
-          Dimensões: {dimensions[0]} × {dimensions[1]} × {dimensions[2]}
+          Altura: <span className="text-primary">{MIN_HEIGHT}</span> a <span className="text-primary">{MAX_HEIGHT}</span>
         </div>
         
         {/* Block count */}

@@ -40,21 +40,27 @@ interface ProjectState {
   loadProject: (jsonData: string) => void;
 }
 
+// Minecraft height constants
+const MIN_HEIGHT = -64;
+const MAX_HEIGHT = 319;
+const TOTAL_HEIGHT = MAX_HEIGHT - MIN_HEIGHT + 1; // 384 blocks total height
+
 export const useProject = create<ProjectState>((set, get) => ({
   // Default dimensions [width(X), height(Y), depth(Z)]
-  // Using Minecraft dimensions: X/Z (horizontal plane) 100x100, Y (vertical) from -64 to 319 = 384 total
-  dimensions: [100, 384, 100],
+  // Using Minecraft dimensions: X/Z effectively unlimited, Y from -64 to 319 = 384 total
+  // Note: Although X/Z are unlimited in theory, we still set a dimension for rendering boundaries
+  dimensions: [1000, TOTAL_HEIGHT, 1000],
   
-  // Start with a few demonstration blocks at Y=50 (default Minecraft terrain level)
+  // Start with a few demonstration blocks at Y=0 (new origin for better visibility)
   voxels: {
-    '25,50,25': 'minecraft:grass_block',
-    '26,50,25': 'minecraft:oak_log',
-    '25,50,26': 'minecraft:glass',
-    '26,50,26': 'minecraft:gold_block',
-    '25,51,25': 'minecraft:diamond_block',
-    '26,51,25': 'minecraft:emerald_block',
-    '25,51,26': 'minecraft:redstone_block',
-    '26,51,26': 'minecraft:iron_block',
+    '-1,0,-1': 'minecraft:grass_block',
+    '0,0,-1': 'minecraft:oak_log',
+    '-1,0,0': 'minecraft:glass',
+    '0,0,0': 'minecraft:gold_block',
+    '-1,1,-1': 'minecraft:diamond_block',
+    '0,1,-1': 'minecraft:emerald_block',
+    '-1,1,0': 'minecraft:redstone_block',
+    '0,1,0': 'minecraft:iron_block',
   },
   
   // Empty history
@@ -62,9 +68,16 @@ export const useProject = create<ProjectState>((set, get) => ({
   historyIndex: -1,
   
   // Initialize a new project
-  initializeProject: (dimensions = [100, 100, 100]) => {
+  initializeProject: (dimensions = [1000, TOTAL_HEIGHT, 1000]) => {
+    // Always ensure the Y dimension respects Minecraft's height limits
+    const validDimensions: [number, number, number] = [
+      dimensions[0], 
+      TOTAL_HEIGHT, // Force correct height
+      dimensions[2]
+    ];
+    
     set({
-      dimensions,
+      dimensions: validDimensions,
       voxels: {},
       history: [],
       historyIndex: -1
