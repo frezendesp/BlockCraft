@@ -1,10 +1,170 @@
 import { useRef, useState, useEffect, useMemo, useCallback } from "react";
 import { Canvas, useFrame, useThree, ThreeEvent } from "@react-three/fiber";
-import { OrbitControls, Grid, Box } from "@react-three/drei";
+import { OrbitControls, Grid, Box, Line } from "@react-three/drei";
 import * as THREE from "three";
 import { useEditor } from "@/lib/stores/useEditor";
 import { useProject } from "@/lib/stores/useProject";
 import { BlockType } from "@/lib/blocks";
+
+// Minecraft chunk size (16x16)
+const CHUNK_SIZE = 16;
+
+// Helper component to render chunk grid
+interface ChunkGridProps {
+  dimensions: [number, number, number];
+  activeChunk: [number, number] | null;
+}
+
+const ChunkGrid = ({ dimensions, activeChunk }: ChunkGridProps) => {
+  const setActiveChunk = useEditor(state => state.setActiveChunk);
+  
+  // Calculate number of chunks in each dimension
+  const chunksX = Math.ceil(dimensions[0] / CHUNK_SIZE);
+  const chunksZ = Math.ceil(dimensions[2] / CHUNK_SIZE);
+  
+  // Generate lines for chunk boundaries
+  const chunkLines = useMemo(() => {
+    const lines: Array<{
+      points: [number, number, number][];
+      color: string;
+      lineWidth: number;
+    }> = [];
+    
+    // Create horizontal chunk lines (along X axis)
+    for (let z = 0; z <= chunksZ; z++) {
+      const zPos = z * CHUNK_SIZE;
+      if (zPos > dimensions[2]) continue; // Skip if outside dimensions
+      
+      const points: [number, number, number][] = [];
+      for (let x = 0; x <= dimensions[0]; x++) {
+        points.push([x, 0, zPos]);
+      }
+      
+      lines.push({
+        points,
+        color: "#5050FF", // Blue for chunk boundaries
+        lineWidth: 2,
+      });
+    }
+    
+    // Create vertical chunk lines (along Z axis)
+    for (let x = 0; x <= chunksX; x++) {
+      const xPos = x * CHUNK_SIZE;
+      if (xPos > dimensions[0]) continue; // Skip if outside dimensions
+      
+      const points: [number, number, number][] = [];
+      for (let z = 0; z <= dimensions[2]; z++) {
+        points.push([xPos, 0, z]);
+      }
+      
+      lines.push({
+        points,
+        color: "#5050FF", // Blue for chunk boundaries
+        lineWidth: 2,
+      });
+    }
+    
+    return lines;
+  }, [dimensions, chunksX, chunksZ]);
+  
+  // Render the highlighted active chunk
+  const activeChunkMesh = useMemo(() => {
+    if (!activeChunk) return null;
+    
+    const [chunkX, chunkZ] = activeChunk;
+    const x = chunkX * CHUNK_SIZE;
+    const z = chunkZ * CHUNK_SIZE;
+    
+    // Make sure chunk is in bounds
+    if (x >= dimensions[0] || z >= dimensions[2]) return null;
+    
+    // Calculate maximum chunk size based on remaining dimensions
+    const sizeX = Math.min(CHUNK_SIZE, dimensions[0] - x);
+    const sizeZ = Math.min(CHUNK_SIZE, dimensions[2] - z);
+    
+    // Create points for the border
+    const points: [number, number, number][][] = [
+      // Bottom perimeter
+      [
+        [x, 0, z],
+        [x + sizeX, 0, z],
+        [x + sizeX, 0, z + sizeZ],
+        [x, 0, z + sizeZ],
+        [x, 0, z],
+      ]
+    ];
+    
+    return points.map((linePoints, index) => (
+      <Line
+        key={`active-chunk-${index}`}
+        points={linePoints}
+        color="#FF2020" // Red for active chunk
+        lineWidth={3}
+      />
+    ));
+  }, [activeChunk, dimensions]);
+  
+  // Handle clicking on a chunk
+  const handleChunkClick = useCallback((chunkX: number, chunkZ: number) => {
+    if (chunkX < 0 || chunkX >= chunksX || chunkZ < 0 || chunkZ >= chunksZ) {
+      return; // Out of bounds
+    }
+    
+    setActiveChunk([chunkX, chunkZ]);
+  }, [chunksX, chunksZ, setActiveChunk]);
+  
+  // Create invisible planes for chunk selection
+  const chunkPlanes = useMemo(() => {
+    const planes: JSX.Element[] = [];
+    
+    for (let chunkX = 0; chunkX < chunksX; chunkX++) {
+      for (let chunkZ = 0; chunkZ < chunksZ; chunkZ++) {
+        const x = chunkX * CHUNK_SIZE;
+        const z = chunkZ * CHUNK_SIZE;
+        
+        // Calculate size respecting dimensions
+        const sizeX = Math.min(CHUNK_SIZE, dimensions[0] - x);
+        const sizeZ = Math.min(CHUNK_SIZE, dimensions[2] - z);
+        
+        if (sizeX <= 0 || sizeZ <= 0) continue; // Skip if size is invalid
+        
+        planes.push(
+          <mesh
+            key={`chunk-${chunkX}-${chunkZ}`}
+            position={[x + sizeX / 2, 0, z + sizeZ / 2]}
+            rotation={[-Math.PI / 2, 0, 0]}
+            onClick={() => handleChunkClick(chunkX, chunkZ)}
+          >
+            <planeGeometry args={[sizeX, sizeZ]} />
+            <meshBasicMaterial transparent opacity={0} />
+          </mesh>
+        );
+      }
+    }
+    
+    return planes;
+  }, [dimensions, chunksX, chunksZ, handleChunkClick]);
+  
+  return (
+    <>
+      {/* Render chunk grid lines */}
+      {chunkLines.map((line, index) => (
+        <Line
+          key={`chunk-line-${index}`}
+          points={line.points}
+          color={line.color}
+          lineWidth={line.lineWidth}
+        />
+      ))}
+      
+      {/* Render active chunk highlight */}
+      {activeChunkMesh}
+      
+      {/* Invisible planes for interaction */}
+      {chunkPlanes}
+    </>
+  );
+};
 
 // Helper component to render a single voxel
 const Voxel = ({ 
@@ -75,8 +235,41 @@ const Voxel = ({
 // Component to handle raycasting and block placement
 const BlockInteraction = () => {
   const { camera, raycaster, pointer, scene } = useThree();
-  const { activeTool, selectedBlockType, hoveredPosition, setHoveredPosition } = useEditor();
+  const { 
+    activeTool, 
+    selectedBlockType, 
+    hoveredPosition, 
+    setHoveredPosition,
+    isShiftPressed,
+    setIsShiftPressed,
+    isDragging,
+    setIsDragging
+  } = useEditor();
   const { getBlock, setBlock, removeBlock } = useProject();
+  const lastPlacedPosition = useRef<[number, number, number] | null>(null);
+
+  // Monitor shift key state
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Shift') {
+        setIsShiftPressed(true);
+      }
+    };
+    
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.key === 'Shift') {
+        setIsShiftPressed(false);
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, [setIsShiftPressed]);
 
   // Update raycaster on pointer move
   useFrame(() => {
@@ -93,7 +286,28 @@ const BlockInteraction = () => {
 
       // Convert to normal grid coordinates
       const normalizedPos = position.clone().add(normal).round();
-      setHoveredPosition(normalizedPos.toArray() as [number, number, number]);
+      const newPosition = normalizedPos.toArray() as [number, number, number];
+      setHoveredPosition(newPosition);
+      
+      // Handle continuous placement during drag
+      if (isDragging && isShiftPressed) {
+        const [x, y, z] = newPosition;
+        
+        // Avoid placing blocks in the same position multiple times
+        if (!lastPlacedPosition.current || 
+            lastPlacedPosition.current[0] !== x || 
+            lastPlacedPosition.current[1] !== y || 
+            lastPlacedPosition.current[2] !== z) {
+          
+          if (activeTool === "place") {
+            setBlock(x, y, z, selectedBlockType);
+          } else if (activeTool === "remove") {
+            removeBlock(x, y, z);
+          }
+          
+          lastPlacedPosition.current = newPosition;
+        }
+      }
     } else {
       setHoveredPosition(null);
     }
@@ -108,10 +322,30 @@ const BlockInteraction = () => {
 
     if (activeTool === "place") {
       setBlock(x, y, z, selectedBlockType);
+      lastPlacedPosition.current = hoveredPosition;
     } else if (activeTool === "remove") {
       removeBlock(x, y, z);
+      lastPlacedPosition.current = hoveredPosition;
+    }
+    
+    // If shift is pressed, start dragging mode
+    if (isShiftPressed) {
+      setIsDragging(true);
     }
   };
+  
+  // Handle mouse up to stop dragging
+  useEffect(() => {
+    const handleMouseUp = () => {
+      if (isDragging) {
+        setIsDragging(false);
+        lastPlacedPosition.current = null;
+      }
+    };
+    
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => window.removeEventListener('mouseup', handleMouseUp);
+  }, [isDragging, setIsDragging]);
 
   return (
     <mesh position={[0, 0, 0]} onClick={handleClick}>
@@ -191,6 +425,14 @@ const Scene = () => {
             infiniteGrid={false}
           />
         </>
+      )}
+      
+      {/* Chunk visualization */}
+      {useEditor(state => state.showChunks) && (
+        <ChunkGrid 
+          dimensions={dimensions as [number, number, number]}
+          activeChunk={useEditor(state => state.activeChunk)}
+        />
       )}
 
       {/* Render all voxels */}

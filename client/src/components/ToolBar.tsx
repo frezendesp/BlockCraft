@@ -5,9 +5,11 @@ export const ToolBar = () => {
     activeTool, 
     viewMode, 
     showGrid,
+    showChunks,
     setActiveTool, 
     setViewMode, 
     toggleGrid,
+    toggleChunks,
     undoAction,
     redoAction,
     canUndo,
@@ -61,6 +63,17 @@ export const ToolBar = () => {
         title={showGrid ? "Hide Grid" : "Show Grid"}
       >
         Grid
+      </button>
+      
+      {/* Chunks toggle */}
+      <button
+        className={`px-3 py-1 rounded-md ${
+          showChunks ? "bg-primary text-primary-foreground" : "bg-card"
+        }`}
+        onClick={toggleChunks}
+        title={showChunks ? "Hide Chunks" : "Show Chunks"}
+      >
+        Chunks
       </button>
 
       {/* Undo/Redo buttons */}

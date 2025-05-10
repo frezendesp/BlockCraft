@@ -8,11 +8,15 @@ interface EditorState {
   // View settings
   viewMode: ViewMode;
   showGrid: boolean;
+  showChunks: boolean;
   currentLayer: number;
+  activeChunk: [number, number] | null; // [chunkX, chunkZ]
   
   // Tool settings
   activeTool: ToolType;
   selectedBlockType: BlockType;
+  isDragging: boolean;
+  isShiftPressed: boolean;
   
   // Selection state
   selectionStart: [number, number, number] | null;
@@ -28,12 +32,16 @@ interface EditorState {
   // Actions
   setViewMode: (mode: ViewMode) => void;
   toggleGrid: () => void;
+  toggleChunks: () => void;
   setCurrentLayer: (layer: number) => void;
+  setActiveChunk: (chunk: [number, number] | null) => void;
   setActiveTool: (tool: ToolType) => void;
   setSelectedBlockType: (blockType: BlockType) => void;
   setSelectionStart: (pos: [number, number, number] | null) => void;
   setSelectionEnd: (pos: [number, number, number] | null) => void;
   setHoveredPosition: (pos: [number, number, number] | null) => void;
+  setIsDragging: (isDragging: boolean) => void;
+  setIsShiftPressed: (isShiftPressed: boolean) => void;
   undoAction: () => void;
   redoAction: () => void;
   setCanUndo: (canUndo: boolean) => void;
@@ -44,11 +52,15 @@ export const useEditor = create<EditorState>((set) => ({
   // Default view settings
   viewMode: "3D",
   showGrid: true,
+  showChunks: true,
   currentLayer: 0,
+  activeChunk: null,
   
   // Default tool settings
   activeTool: "place",
   selectedBlockType: DEFAULT_BLOCK,
+  isDragging: false,
+  isShiftPressed: false,
   
   // Default selection state
   selectionStart: null,
@@ -64,12 +76,16 @@ export const useEditor = create<EditorState>((set) => ({
   // Actions
   setViewMode: (mode) => set({ viewMode: mode }),
   toggleGrid: () => set((state) => ({ showGrid: !state.showGrid })),
+  toggleChunks: () => set((state) => ({ showChunks: !state.showChunks })),
   setCurrentLayer: (layer) => set({ currentLayer: layer }),
+  setActiveChunk: (chunk) => set({ activeChunk: chunk }),
   setActiveTool: (tool) => set({ activeTool: tool }),
   setSelectedBlockType: (blockType) => set({ selectedBlockType: blockType }),
   setSelectionStart: (pos) => set({ selectionStart: pos }),
   setSelectionEnd: (pos) => set({ selectionEnd: pos }),
   setHoveredPosition: (pos) => set({ hoveredPosition: pos }),
+  setIsDragging: (isDragging) => set({ isDragging }),
+  setIsShiftPressed: (isShiftPressed) => set({ isShiftPressed }),
   undoAction: () => {
     // Trigger undo in the project store
     const { undo } = require("./useProject").useProject.getState();

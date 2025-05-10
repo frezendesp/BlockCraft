@@ -3,6 +3,9 @@ import { useProject } from "@/lib/stores/useProject";
 import { useEditor } from "@/lib/stores/useEditor";
 import { BlockType } from "@/lib/blocks";
 
+// Minecraft chunk size (16x16)
+const CHUNK_SIZE = 16;
+
 export const Canvas2D = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
