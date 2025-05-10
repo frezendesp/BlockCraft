@@ -433,7 +433,7 @@ const Scene = () => {
       
       // Add a single red test block at origin if nothing to render
       result.push({
-        position: [0, 50, 0] as [number, number, number],
+        position: [0, 0, 0] as [number, number, number],
         blockType: "minecraft:redstone_block"
       });
     }
@@ -592,7 +592,7 @@ export const Canvas3D = () => {
   return (
     <div className="w-full h-full">
       <Canvas
-        camera={{ position: [25, 65, 25], fov: 75, near: 0.1, far: 1000 }}
+        camera={{ position: [20, 20, 20], fov: 75, near: 0.1, far: 1000 }}
         gl={{ antialias: true }}
       >
         <color attach="background" args={["#1a1a1a"]} />
@@ -616,10 +616,10 @@ export const Canvas3D = () => {
           enablePan={true}
           enableRotate={true}
           minDistance={5}
-          maxDistance={200}
+          maxDistance={500}
           dampingFactor={0.1}
           rotateSpeed={0.7}
-          target={[25, 50, 25]} // Center view on default build area at Y=50
+          target={[0, 0, 0]} // Center view on origin
           makeDefault
         />
       </Canvas>

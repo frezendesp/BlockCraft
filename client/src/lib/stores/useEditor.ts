@@ -48,12 +48,16 @@ interface EditorState {
   setCanRedo: (canRedo: boolean) => void;
 }
 
+// Minecraft height constants for editor
+const MIN_HEIGHT = -64;
+const MAX_HEIGHT = 319;
+
 export const useEditor = create<EditorState>((set) => ({
   // Default view settings
   viewMode: "3D",
   showGrid: true,
   showChunks: true,
-  currentLayer: 50, // Default Y level at 50 (as per Minecraft standard ground level)
+  currentLayer: 0, // Default Y level at 0 (new origin point for better visibility)
   activeChunk: null,
   
   // Default tool settings
@@ -77,7 +81,11 @@ export const useEditor = create<EditorState>((set) => ({
   setViewMode: (mode) => set({ viewMode: mode }),
   toggleGrid: () => set((state) => ({ showGrid: !state.showGrid })),
   toggleChunks: () => set((state) => ({ showChunks: !state.showChunks })),
-  setCurrentLayer: (layer) => set({ currentLayer: layer }),
+  setCurrentLayer: (layer) => {
+    // Ensure layer is within Minecraft height limits
+    const validLayer = Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, layer));
+    set({ currentLayer: validLayer });
+  },
   setActiveChunk: (chunk) => set({ activeChunk: chunk }),
   setActiveTool: (tool) => set({ activeTool: tool }),
   setSelectedBlockType: (blockType) => set({ selectedBlockType: blockType }),

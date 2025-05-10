@@ -85,7 +85,7 @@ export const useProject = create<ProjectState>((set, get) => ({
     
     // Update editor state
     useEditor.setState({
-      currentLayer: 50, // Default Y level at 50 (Minecraft standard ground level)
+      currentLayer: 0, // Default Y level at 0 (new origin point)
       canUndo: false,
       canRedo: false
     });
