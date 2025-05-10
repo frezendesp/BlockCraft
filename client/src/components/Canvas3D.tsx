@@ -180,6 +180,71 @@ const ChunkGrid = ({ dimensions, activeChunk }: ChunkGridProps) => {
   );
 };
 
+// SelectionBox component to visualize selected area
+const SelectionBox = () => {
+  const selectionStart = useEditor(state => state.selectionStart);
+  const selectionEnd = useEditor(state => state.selectionEnd);
+  
+  // Return null if no selection is active
+  if (!selectionStart || !selectionEnd) return null;
+  
+  // Normalize coordinates to get width, height, depth
+  const [x1, y1, z1] = selectionStart;
+  const [x2, y2, z2] = selectionEnd;
+  
+  const minX = Math.min(x1, x2);
+  const maxX = Math.max(x1, x2);
+  const minY = Math.min(y1, y2);
+  const maxY = Math.max(y1, y2);
+  const minZ = Math.min(z1, z2);
+  const maxZ = Math.max(z1, z2);
+  
+  // Calculate box dimensions and center position
+  const width = maxX - minX + 1;
+  const height = maxY - minY + 1;
+  const depth = maxZ - minZ + 1;
+  
+  const center = [
+    minX + width / 2 - 0.5,
+    minY + height / 2 - 0.5,
+    minZ + depth / 2 - 0.5
+  ];
+  
+  console.log(`Rendering selection box from [${minX},${minY},${minZ}] to [${maxX},${maxY},${maxZ}]`);
+  console.log(`Box dimensions: ${width} x ${height} x ${depth}`);
+  
+  // Cast center to the expected tuple type
+  const centerPosition: [number, number, number] = [
+    center[0], center[1], center[2]
+  ];
+  
+  return (
+    <group position={centerPosition}>
+      {/* Selection volume */}
+      <mesh>
+        <boxGeometry args={[width, height, depth]} />
+        <meshBasicMaterial 
+          color="#4488FF" 
+          opacity={0.2} 
+          transparent={true} 
+          side={THREE.DoubleSide} 
+        />
+      </mesh>
+      
+      {/* Selection wireframe */}
+      <mesh>
+        <boxGeometry args={[width, height, depth]} />
+        <meshBasicMaterial 
+          color="#FFFFFF" 
+          wireframe={true} 
+          opacity={0.8}
+          transparent={true}
+        />
+      </mesh>
+    </group>
+  );
+};
+
 // Helper component to render a single voxel
 const Voxel = ({ 
   position, 
@@ -637,6 +702,9 @@ export const Canvas3D = () => {
         
         {/* Scene content */}
         <Scene />
+        
+        {/* Selection box visualization */}
+        <SelectionBox />
         
         {/* Ghost block preview */}
         <GhostBlock />
