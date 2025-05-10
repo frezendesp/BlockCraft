@@ -410,30 +410,28 @@ const Scene = () => {
 
   // Convert voxels Map to array for rendering
   const voxelsArray = useMemo(() => {
+    // Create an explicit array of blocks from the voxels object
     const result = Object.entries(voxels).map(([key, blockType]) => {
       const [x, y, z] = key.split(',').map(Number);
+      
+      // Skip "air" blocks - they don't need to be rendered
+      if (blockType === "minecraft:air") return null;
+      
       return { 
         position: [x, y, z] as [number, number, number], 
         blockType 
       };
-    });
+    }).filter(Boolean); // Remove null values
     
-    // Add some test blocks if there are none (remove this in production)
+    // For explicit debug
     if (result.length === 0) {
-      // Create a small test structure with proper typing
-      const testBlocks: { position: [number, number, number]; blockType: BlockType }[] = [
-        { position: [10, 10, 10] as [number, number, number], blockType: "minecraft:stone" },
-        { position: [11, 10, 10] as [number, number, number], blockType: "minecraft:grass_block" },
-        { position: [10, 10, 11] as [number, number, number], blockType: "minecraft:oak_log" },
-        { position: [11, 10, 11] as [number, number, number], blockType: "minecraft:glass" },
-        { position: [10, 11, 10] as [number, number, number], blockType: "minecraft:gold_block" },
-        { position: [11, 11, 10] as [number, number, number], blockType: "minecraft:diamond_block" },
-        { position: [10, 11, 11] as [number, number, number], blockType: "minecraft:iron_block" },
-        { position: [11, 11, 11] as [number, number, number], blockType: "minecraft:emerald_block" },
-      ];
+      console.log("Warning: No blocks to render in 3D view");
       
-      console.log("Adding test blocks for visualization");
-      result.push(...testBlocks);
+      // Add a single red test block at origin if nothing to render
+      result.push({
+        position: [25, 50, 25] as [number, number, number],
+        blockType: "minecraft:redstone_block"
+      });
     }
     
     // Log for debugging
@@ -483,14 +481,19 @@ const Scene = () => {
       )}
 
       {/* Render all voxels */}
-      {voxelsArray.map((voxel, index) => (
-        <Voxel
-          key={`${voxel.position.join(',')}`}
-          position={voxel.position as [number, number, number]}
-          blockType={voxel.blockType}
-          onClick={() => handleVoxelClick(voxel.position as [number, number, number])}
-        />
-      ))}
+      {voxelsArray.map((voxel, index) => {
+        // TypeScript safety check
+        if (!voxel) return null;
+        
+        return (
+          <Voxel
+            key={`voxel-${voxel.position.join(',')}`}
+            position={voxel.position as [number, number, number]}
+            blockType={voxel.blockType}
+            onClick={() => handleVoxelClick(voxel.position as [number, number, number])}
+          />
+        );
+      })}
 
       {/* Handle block interaction */}
       <BlockInteraction />
@@ -525,7 +528,7 @@ export const Canvas3D = () => {
   return (
     <div className="w-full h-full">
       <Canvas
-        camera={{ position: [15, 15, 15], fov: 60, near: 0.1, far: 1000 }}
+        camera={{ position: [25, 60, 25], fov: 60, near: 0.1, far: 1000 }}
         gl={{ antialias: true }}
       >
         <color attach="background" args={["#1a1a1a"]} />
@@ -541,19 +544,7 @@ export const Canvas3D = () => {
         {/* Ghost block preview */}
         <GhostBlock />
         
-        {/* Debug placeholders (remove later) */}
-        <Box position={[50, 50, 50]} args={[3, 3, 3]}>
-          <meshStandardMaterial color="#FF0000" />
-        </Box>
-        <Box position={[45, 50, 45]} args={[1, 1, 1]}>
-          <meshStandardMaterial color="#00FF00" />
-        </Box>
-        <Box position={[55, 50, 55]} args={[1, 1, 1]}>
-          <meshStandardMaterial color="#0000FF" />
-        </Box>
-        <Box position={[50, 55, 50]} args={[1, 1, 1]}>
-          <meshStandardMaterial color="#FFFF00" />
-        </Box>
+        {/* Debug placeholders removed */}
         
         {/* Controls */}
         <OrbitControls 
