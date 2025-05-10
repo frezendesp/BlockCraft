@@ -45,8 +45,17 @@ export const useProject = create<ProjectState>((set, get) => ({
   // Using Minecraft dimensions: X/Z (horizontal plane) 100x100, Y (vertical) from -64 to 319 = 384 total
   dimensions: [100, 384, 100],
   
-  // Start with an empty voxel space
-  voxels: {},
+  // Start with a few demonstration blocks at Y=50 (default Minecraft terrain level)
+  voxels: {
+    '25,50,25': 'minecraft:grass_block',
+    '26,50,25': 'minecraft:oak_log',
+    '25,50,26': 'minecraft:glass',
+    '26,50,26': 'minecraft:gold_block',
+    '25,51,25': 'minecraft:diamond_block',
+    '26,51,25': 'minecraft:emerald_block',
+    '25,51,26': 'minecraft:redstone_block',
+    '26,51,26': 'minecraft:iron_block',
+  },
   
   // Empty history
   history: [],

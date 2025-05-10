@@ -468,29 +468,65 @@ const Scene = () => {
 
   return (
     <>
-      {/* Grid visualization - only horizontal grid (no Y-axis grid) */}
+      {/* Grid visualization with Y-axis limits */}
       {showGrid && (
-        <Grid 
-          position={[0, 0, 0]} 
-          args={[dimensions[0] * 2, dimensions[2] * 2]} 
-          cellSize={1}
-          cellThickness={0.5}
-          cellColor="#666666"
-          sectionSize={10}
-          sectionThickness={1}
-          sectionColor="#888888"
-          fadeDistance={dimensions[0] * 2}
-          infiniteGrid={false}
-        />
+        <>
+          {/* Main grid at y=50 (default Minecraft terrain level) */}
+          <Grid 
+            position={[0, 50, 0]} 
+            args={[dimensions[0] * 2, dimensions[2] * 2]} 
+            cellSize={1}
+            cellThickness={0.5}
+            cellColor="#666666"
+            sectionSize={10}
+            sectionThickness={1}
+            sectionColor="#888888"
+            fadeDistance={dimensions[0] * 2}
+            infiniteGrid={false}
+          />
+          
+          {/* Lower limit grid at y=-64 (Minecraft bedrock level) */}
+          <Grid 
+            position={[0, -64, 0]} 
+            args={[dimensions[0] * 2, dimensions[2] * 2]} 
+            cellSize={1}
+            cellThickness={0.2}
+            cellColor="#333333"
+            sectionSize={10}
+            sectionThickness={0.4}
+            sectionColor="#444444"
+            fadeDistance={dimensions[0] * 3}
+            infiniteGrid={false}
+          />
+          
+          {/* Upper limit grid at y=319 (Minecraft build limit) */}
+          <Grid 
+            position={[0, 319, 0]} 
+            args={[dimensions[0] * 2, dimensions[2] * 2]} 
+            cellSize={1}
+            cellThickness={0.2}
+            cellColor="#AAAAFF"
+            sectionSize={10}
+            sectionThickness={0.4}
+            sectionColor="#8888FF"
+            fadeDistance={dimensions[0] * 3}
+            infiniteGrid={false}
+          />
+        </>
       )}
       
       {/* Chunk visualization */}
-      {useEditor(state => state.showChunks) && (
-        <ChunkGrid 
-          dimensions={dimensions as [number, number, number]}
-          activeChunk={useEditor(state => state.activeChunk)}
-        />
-      )}
+      {(() => {
+        const showChunks = useEditor(state => state.showChunks);
+        const activeChunk = useEditor(state => state.activeChunk);
+        
+        return showChunks ? (
+          <ChunkGrid 
+            dimensions={dimensions as [number, number, number]}
+            activeChunk={activeChunk}
+          />
+        ) : null;
+      })()}
 
       {/* Render all voxels */}
       {voxelsArray.map((voxel, index) => {
@@ -574,7 +610,7 @@ export const Canvas3D = () => {
   return (
     <div className="w-full h-full">
       <Canvas
-        camera={{ position: [25, 60, 25], fov: 60, near: 0.1, far: 1000 }}
+        camera={{ position: [25, 65, 25], fov: 75, near: 0.1, far: 1000 }}
         gl={{ antialias: true }}
       >
         <color attach="background" args={["#1a1a1a"]} />
@@ -601,7 +637,8 @@ export const Canvas3D = () => {
           maxDistance={200}
           dampingFactor={0.1}
           rotateSpeed={0.7}
-          target={[25, 50, 25]} // Center view on default build area
+          target={[25, 50, 25]} // Center view on default build area at Y=50
+          makeDefault
         />
       </Canvas>
     </div>
