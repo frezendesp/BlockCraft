@@ -63,7 +63,7 @@ export const useProject = create<ProjectState>((set, get) => ({
     
     // Update editor state
     useEditor.setState({
-      currentLayer: 0,
+      currentLayer: 50, // Default Y level at 50 (Minecraft standard ground level)
       canUndo: false,
       canRedo: false
     });
@@ -193,8 +193,8 @@ export const useProject = create<ProjectState>((set, get) => ({
     
     const minX = Math.max(0, Math.min(x1, x2));
     const maxX = Math.min(dimensions[0] - 1, Math.max(x1, x2));
-    const minY = Math.max(0, Math.min(y1, y2));
-    const maxY = Math.min(dimensions[1] - 1, Math.max(y1, y2));
+    const minY = Math.max(-64, Math.min(y1, y2)); // Minecraft Y range: -64 to 319
+    const maxY = Math.min(319, Math.max(y1, y2)); // Minecraft Y range: -64 to 319
     const minZ = Math.max(0, Math.min(z1, z2));
     const maxZ = Math.min(dimensions[2] - 1, Math.max(z1, z2));
     
@@ -245,8 +245,8 @@ export const useProject = create<ProjectState>((set, get) => ({
     
     const minX = Math.max(0, Math.min(x1, x2));
     const maxX = Math.min(dimensions[0] - 1, Math.max(x1, x2));
-    const minY = Math.max(0, Math.min(y1, y2));
-    const maxY = Math.min(dimensions[1] - 1, Math.max(y1, y2));
+    const minY = Math.max(-64, Math.min(y1, y2)); // Minecraft Y range: -64 to 319
+    const maxY = Math.min(319, Math.max(y1, y2)); // Minecraft Y range: -64 to 319
     const minZ = Math.max(0, Math.min(z1, z2));
     const maxZ = Math.min(dimensions[2] - 1, Math.max(z1, z2));
     
@@ -424,7 +424,7 @@ export const useProject = create<ProjectState>((set, get) => ({
       
       // Update editor state
       useEditor.setState({
-        currentLayer: 0,
+        currentLayer: 50, // Default Y level at 50 (Minecraft standard ground level)
         canUndo: false,
         canRedo: false
       });

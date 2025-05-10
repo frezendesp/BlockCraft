@@ -53,7 +53,7 @@ export const useEditor = create<EditorState>((set) => ({
   viewMode: "3D",
   showGrid: true,
   showChunks: true,
-  currentLayer: 0,
+  currentLayer: 50, // Default Y level at 50 (as per Minecraft standard ground level)
   activeChunk: null,
   
   // Default tool settings
