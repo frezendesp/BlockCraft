@@ -90,6 +90,10 @@ export const useProject = create<ProjectState>((set, get) => ({
     '-1,1,0': 'minecraft:redstone_block',
     '0,1,0': 'minecraft:iron_block',
   },
+
+  // Initialize empty groups and active group
+  groups: {},
+  activeGroupId: null,
   
   // Empty history
   history: [],
@@ -451,15 +455,398 @@ export const useProject = create<ProjectState>((set, get) => ({
     });
   },
   
+  // Group Management Functions
+  
+  // Create a group from blocks in the specified area
+  createGroup: (start, end, name = "Grupo") => {
+    const { voxels, groups, history, historyIndex } = get();
+    
+    // Generate a unique ID
+    const groupId = `group_${Date.now()}_${Object.keys(groups).length}`;
+    
+    // Normalize coordinates
+    const [x1, y1, z1] = start;
+    const [x2, y2, z2] = end;
+    
+    const minX = Math.min(x1, x2);
+    const maxX = Math.max(x1, x2);
+    const minY = Math.max(-64, Math.min(y1, y2)); // Respect Minecraft Y limits
+    const maxY = Math.min(319, Math.max(y1, y2)); // Respect Minecraft Y limits
+    const minZ = Math.min(z1, z2);
+    const maxZ = Math.max(z1, z2);
+    
+    // Extract blocks in the selection area
+    const groupBlocks: Record<string, BlockType> = {};
+    
+    for (let x = minX; x <= maxX; x++) {
+      for (let y = minY; y <= maxY; y++) {
+        for (let z = minZ; z <= maxZ; z++) {
+          const posKey = `${x},${y},${z}`;
+          
+          // Only include existing blocks
+          if (voxels[posKey]) {
+            groupBlocks[posKey] = voxels[posKey];
+          }
+        }
+      }
+    }
+    
+    // Skip if no blocks found
+    if (Object.keys(groupBlocks).length === 0) {
+      console.warn("No blocks found in selection for group creation");
+      return "";
+    }
+    
+    // Create the group
+    const newGroup: BlockGroup = {
+      id: groupId,
+      name: name,
+      blocks: groupBlocks,
+      origin: [minX, minY, minZ] // Use minimum corner as origin
+    };
+    
+    // Add to groups
+    const newGroups = { ...groups, [groupId]: newGroup };
+    
+    // Create a history action
+    const newAction: HistoryAction = {
+      type: "group",
+      groupId,
+      group: newGroup
+    };
+    
+    // Update history
+    const newHistory = history.slice(0, historyIndex + 1);
+    newHistory.push(newAction);
+    
+    // Update state
+    set({
+      groups: newGroups,
+      activeGroupId: groupId,
+      history: newHistory,
+      historyIndex: historyIndex + 1
+    });
+    
+    // Update editor state
+    useEditor.setState({
+      canUndo: true,
+      canRedo: false,
+      // Clear selection after creating a group
+      selectionStart: null,
+      selectionEnd: null
+    });
+    
+    console.log(`Created group '${name}' with ${Object.keys(groupBlocks).length} blocks`);
+    return groupId;
+  },
+  
+  // Get a group by ID
+  getGroupById: (groupId) => {
+    const { groups } = get();
+    return groups[groupId] || null;
+  },
+  
+  // Set the active group
+  setActiveGroup: (groupId) => {
+    set({ activeGroupId: groupId });
+  },
+  
+  // Remove a group (doesn't remove the blocks)
+  removeGroup: (groupId) => {
+    const { groups, activeGroupId, history, historyIndex } = get();
+    
+    // Check if group exists
+    if (!groups[groupId]) {
+      console.error(`Group ${groupId} not found`);
+      return;
+    }
+    
+    // Store group for history
+    const removedGroup = groups[groupId];
+    
+    // Create a copy of groups without the removed one
+    const newGroups = { ...groups };
+    delete newGroups[groupId];
+    
+    // Create a history action
+    const newAction: HistoryAction = {
+      type: "ungroup",
+      groupId,
+      group: removedGroup
+    };
+    
+    // Update history
+    const newHistory = history.slice(0, historyIndex + 1);
+    newHistory.push(newAction);
+    
+    // Update state
+    set({
+      groups: newGroups,
+      activeGroupId: activeGroupId === groupId ? null : activeGroupId,
+      history: newHistory,
+      historyIndex: historyIndex + 1
+    });
+    
+    // Update editor state
+    useEditor.setState({
+      canUndo: true,
+      canRedo: false
+    });
+    
+    console.log(`Removed group ${removedGroup.name}`);
+  },
+  
+  // Move a group by the specified offset
+  moveGroup: (groupId, offset) => {
+    const { groups, voxels, history, historyIndex } = get();
+    
+    // Check if group exists
+    if (!groups[groupId]) {
+      console.error(`Group ${groupId} not found`);
+      return;
+    }
+    
+    // Get group and validate offset
+    const group = groups[groupId];
+    const [offsetX, offsetY, offsetZ] = offset;
+    
+    if (offsetX === 0 && offsetY === 0 && offsetZ === 0) {
+      return; // No movement needed
+    }
+    
+    // Track affected blocks for history
+    const affectedBlocks: Record<string, BlockType | null> = {};
+    
+    // Create a copy of voxels
+    const newVoxels = { ...voxels };
+    
+    // First remove all blocks from their current positions
+    for (const [posKey, blockType] of Object.entries(group.blocks)) {
+      const [x, y, z] = posKey.split(',').map(Number);
+      
+      // Record original state
+      affectedBlocks[posKey] = blockType;
+      
+      // Remove from current position
+      delete newVoxels[posKey];
+    }
+    
+    // Create the updated blocks for the group
+    const newGroupBlocks: Record<string, BlockType> = {};
+    
+    // Then place them at their new positions
+    for (const [posKey, blockType] of Object.entries(group.blocks)) {
+      const [x, y, z] = posKey.split(',').map(Number);
+      
+      // Calculate new position
+      const newX = x + offsetX;
+      const newY = y + offsetY;
+      const newZ = z + offsetZ;
+      
+      // Check if new position is valid (within Minecraft's height limits)
+      if (newY < -64 || newY > 319) {
+        console.warn(`Position [${newX}, ${newY}, ${newZ}] out of Minecraft height range`);
+        continue;
+      }
+      
+      const newPosKey = `${newX},${newY},${newZ}`;
+      
+      // Record target state for history
+      affectedBlocks[newPosKey] = voxels[newPosKey] || null;
+      
+      // Place at new position
+      newVoxels[newPosKey] = blockType;
+      
+      // Add to new group blocks
+      newGroupBlocks[newPosKey] = blockType;
+    }
+    
+    // Update the group with new positions and origin
+    const newGroup: BlockGroup = {
+      ...group,
+      blocks: newGroupBlocks,
+      origin: [
+        group.origin[0] + offsetX,
+        group.origin[1] + offsetY,
+        group.origin[2] + offsetZ
+      ]
+    };
+    
+    // Update groups
+    const newGroups = { 
+      ...groups, 
+      [groupId]: newGroup 
+    };
+    
+    // Create a history action
+    const newAction: HistoryAction = {
+      type: "moveGroup",
+      groupId,
+      group: group, // Original group
+      oldPosition: group.origin,
+      newPosition: newGroup.origin,
+      affectedBlocks
+    };
+    
+    // Update history
+    const newHistory = history.slice(0, historyIndex + 1);
+    newHistory.push(newAction);
+    
+    // Update state
+    set({
+      voxels: newVoxels,
+      groups: newGroups,
+      history: newHistory,
+      historyIndex: historyIndex + 1
+    });
+    
+    // Update editor state
+    useEditor.setState({
+      canUndo: true,
+      canRedo: false
+    });
+    
+    console.log(`Moved group ${group.name} by [${offsetX}, ${offsetY}, ${offsetZ}]`);
+  },
+  
+  // Rotate a group around an axis
+  rotateGroup: (groupId, axis, degrees) => {
+    const { groups, voxels, history, historyIndex } = get();
+    
+    // Check if group exists
+    if (!groups[groupId]) {
+      console.error(`Group ${groupId} not found`);
+      return;
+    }
+    
+    // Get group
+    const group = groups[groupId];
+    
+    // Calculate rotation in radians
+    const radians = (degrees * Math.PI) / 180;
+    const cos = Math.cos(radians);
+    const sin = Math.sin(radians);
+    
+    // Track affected blocks for history
+    const affectedBlocks: Record<string, BlockType | null> = {};
+    
+    // Create a copy of voxels
+    const newVoxels = { ...voxels };
+    
+    // Reference point (origin of the group)
+    const [originX, originY, originZ] = group.origin;
+    
+    // First remove all blocks from their current positions
+    for (const [posKey, blockType] of Object.entries(group.blocks)) {
+      // Record original state
+      affectedBlocks[posKey] = blockType;
+      
+      // Remove from current position
+      delete newVoxels[posKey];
+    }
+    
+    // Create new group blocks
+    const newGroupBlocks: Record<string, BlockType> = {};
+    
+    // Rotate and place blocks at their new positions
+    for (const [posKey, blockType] of Object.entries(group.blocks)) {
+      const [x, y, z] = posKey.split(',').map(Number);
+      
+      // Calculate position relative to origin
+      const relX = x - originX;
+      const relY = y - originY;
+      const relZ = z - originZ;
+      
+      // Apply rotation based on axis
+      let newRelX = relX, newRelY = relY, newRelZ = relZ;
+      
+      if (axis === 'x') {
+        // Rotate around X axis
+        newRelY = Math.round(relY * cos - relZ * sin);
+        newRelZ = Math.round(relY * sin + relZ * cos);
+      } else if (axis === 'y') {
+        // Rotate around Y axis
+        newRelX = Math.round(relX * cos + relZ * sin);
+        newRelZ = Math.round(-relX * sin + relZ * cos);
+      } else if (axis === 'z') {
+        // Rotate around Z axis
+        newRelX = Math.round(relX * cos - relY * sin);
+        newRelY = Math.round(relX * sin + relY * cos);
+      }
+      
+      // Convert back to world coordinates
+      const newX = originX + newRelX;
+      const newY = originY + newRelY;
+      const newZ = originZ + newRelZ;
+      
+      // Check if new position is valid (within Minecraft's height limits)
+      if (newY < -64 || newY > 319) {
+        console.warn(`Position [${newX}, ${newY}, ${newZ}] out of Minecraft height range`);
+        continue;
+      }
+      
+      const newPosKey = `${newX},${newY},${newZ}`;
+      
+      // Record target state for history
+      affectedBlocks[newPosKey] = voxels[newPosKey] || null;
+      
+      // Place at new position
+      newVoxels[newPosKey] = blockType;
+      
+      // Add to new group blocks
+      newGroupBlocks[newPosKey] = blockType;
+    }
+    
+    // Update the group with new positions
+    const newGroup: BlockGroup = {
+      ...group,
+      blocks: newGroupBlocks
+    };
+    
+    // Update groups
+    const newGroups = { 
+      ...groups, 
+      [groupId]: newGroup 
+    };
+    
+    // Create a history action
+    const newAction: HistoryAction = {
+      type: "batch", // Use batch for rotation
+      groupId,
+      affectedBlocks
+    };
+    
+    // Update history
+    const newHistory = history.slice(0, historyIndex + 1);
+    newHistory.push(newAction);
+    
+    // Update state
+    set({
+      voxels: newVoxels,
+      groups: newGroups,
+      history: newHistory,
+      historyIndex: historyIndex + 1
+    });
+    
+    // Update editor state
+    useEditor.setState({
+      canUndo: true,
+      canRedo: false
+    });
+    
+    console.log(`Rotated group ${group.name} around ${axis} axis by ${degrees} degrees`);
+  },
+  
   // Save the project as a JSON file
   saveProject: () => {
-    const { voxels, dimensions } = get();
+    const { voxels, dimensions, groups } = get();
     
     // Create the project data
     const projectData = {
       version: "1.0.0",
       dimensions,
-      voxels
+      voxels,
+      groups
     };
     
     // Convert to JSON and create a blob
@@ -478,17 +865,20 @@ export const useProject = create<ProjectState>((set, get) => ({
         throw new Error("Invalid project file");
       }
       
-      // Update state
+      // Update state with groups support
       set({
         dimensions: projectData.dimensions,
         voxels: projectData.voxels,
+        // If file has groups, load them, otherwise initialize empty
+        groups: projectData.groups || {},
+        activeGroupId: null,
         history: [],
         historyIndex: -1
       });
       
       // Update editor state
       useEditor.setState({
-        currentLayer: 50, // Default Y level at 50 (Minecraft standard ground level)
+        currentLayer: 0, // Default Y level at 0 (Our new origin point)
         canUndo: false,
         canRedo: false
       });

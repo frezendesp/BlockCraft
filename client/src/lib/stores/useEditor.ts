@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { BlockType, DEFAULT_BLOCK } from "../blocks";
 
 export type ViewMode = "3D" | "2D";
-export type ToolType = "place" | "remove" | "select" | "fill";
+export type ToolType = "place" | "remove" | "select" | "fill" | "group";
 
 interface EditorState {
   // View settings

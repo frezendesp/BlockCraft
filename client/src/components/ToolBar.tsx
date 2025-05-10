@@ -22,6 +22,7 @@ export const ToolBar = () => {
     { id: "remove", label: "Remover Bloco", icon: "🧹" },
     { id: "fill", label: "Preencher Área", icon: "🪣" },
     { id: "select", label: "Selecionar", icon: "📏" },
+    { id: "group", label: "Criar Grupo", icon: "📦" },
   ] as const;
 
   return (

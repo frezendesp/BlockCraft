@@ -467,6 +467,30 @@ const BlockInteraction = () => {
         console.log("Select an area first before using fill tool");
       }
       return;
+    } else if (activeTool === "group") {
+      // Group creation requires both start and end points
+      const { selectionStart, selectionEnd } = useEditor.getState();
+      
+      if (selectionStart && selectionEnd) {
+        // Create a group from the selection
+        const { createGroup } = useProject.getState();
+        const groupId = createGroup(selectionStart, selectionEnd, "Novo Grupo");
+        
+        if (groupId) {
+          console.log(`Created group with ID: ${groupId}`);
+          
+          // Clear selection after creating group
+          useEditor.setState({ 
+            selectionStart: null, 
+            selectionEnd: null 
+          });
+        } else {
+          console.log("Failed to create group: No blocks found in selection");
+        }
+      } else {
+        console.log("Select an area first before creating a group");
+      }
+      return;
     }
     
     // If shift is pressed, start dragging mode (for place and remove tools)
