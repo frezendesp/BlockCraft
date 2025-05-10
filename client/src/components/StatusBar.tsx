@@ -12,6 +12,29 @@ export const StatusBar = () => {
   // Get the active group, if any
   const activeGroup = activeGroupId ? getGroupById(activeGroupId) : null;
   
+  // Selection state from editor
+  const selectionStart = useEditor(state => state.selectionStart);
+  const selectionEnd = useEditor(state => state.selectionEnd);
+  
+  // Check if there's an active selection
+  const hasActiveSelection = !!(selectionStart && selectionEnd);
+  
+  // Handle creating a group from current selection
+  const handleCreateGroup = () => {
+    if (selectionStart && selectionEnd) {
+      const { createGroup } = useProject.getState();
+      const groupId = createGroup(selectionStart, selectionEnd, "Novo Grupo");
+      
+      if (groupId) {
+        // Clear selection after creating group in the editor state
+        useEditor.setState({ 
+          selectionStart: null, 
+          selectionEnd: null 
+        });
+      }
+    }
+  };
+  
   // Calculate block statistics
   useEffect(() => {
     setBlockCount(Object.keys(voxels).length);
@@ -93,9 +116,20 @@ export const StatusBar = () => {
             {activeTool === 'place' ? 'colocar' : 
              activeTool === 'remove' ? 'remover' : 
              activeTool === 'fill' ? 'preencher' : 
-             activeTool === 'select' ? 'selecionar' : activeTool}
+             activeTool === 'select' ? 'selecionar' : 
+             activeTool === 'group' ? 'agrupar' : activeTool}
           </span>
         </div>
+        
+        {/* Quick action for active selection */}
+        {hasActiveSelection && (
+          <button
+            className="text-sm px-2 py-0.5 rounded-md bg-amber-500 text-white hover:bg-amber-600 transition-colors"
+            onClick={handleCreateGroup}
+          >
+            Criar Grupo
+          </button>
+        )}
       </div>
       
       <div className="flex space-x-4">
@@ -108,6 +142,15 @@ export const StatusBar = () => {
         <div className="text-muted-foreground">
           {blockCount} bloco{blockCount !== 1 ? "s" : ""} colocado{blockCount !== 1 ? "s" : ""}
         </div>
+        
+        {/* Active group information */}
+        {activeGroup && (
+          <div className="text-muted-foreground flex items-center">
+            <span className="h-2 w-2 rounded-full bg-amber-500 mr-1.5"></span>
+            Grupo ativo: <span className="font-medium text-amber-500 mx-1">{activeGroup.name}</span>
+            ({groupBlockCount} bloco{groupBlockCount !== 1 ? "s" : ""})
+          </div>
+        )}
       </div>
     </div>
   );
