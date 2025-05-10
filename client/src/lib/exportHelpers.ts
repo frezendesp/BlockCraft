@@ -1,5 +1,98 @@
 import { BlockType } from "./blocks";
-import { optimizeVoxelRegions, FillRegion } from "./voxelHelpers";
+import { optimizeVoxelRegions, FillRegion, parseVoxelKey } from "./voxelHelpers";
+
+// Helper function to check if a position has a block
+const hasBlock = (voxels: Record<string, BlockType>, x: number, y: number, z: number): boolean => {
+  return voxels[`${x},${y},${z}`] !== undefined;
+};
+
+// Helper function to identify internal spaces
+const findInternalSpaces = (
+  voxels: Record<string, BlockType>,
+  minX: number, minY: number, minZ: number,
+  maxX: number, maxY: number, maxZ: number
+): [number, number, number][] => {
+  const internalSpaces: [number, number, number][] = [];
+  
+  // Check each potential internal position
+  for (let y = minY; y <= maxY; y++) {
+    for (let z = minZ; z <= maxZ; z++) {
+      for (let x = minX; x <= maxX; x++) {
+        // Skip positions that already have blocks
+        if (hasBlock(voxels, x, y, z)) continue;
+        
+        // Check if this position is internal (surrounded by blocks)
+        let isInternal = true;
+        
+        // Check if there's a clear path to the outside in all 6 directions
+        // X+ direction
+        let hasPathX1 = false;
+        for (let tx = x + 1; tx <= maxX; tx++) {
+          if (!hasBlock(voxels, tx, y, z)) {
+            hasPathX1 = true;
+            break;
+          }
+        }
+        if (!hasPathX1) {
+          // X- direction
+          let hasPathX2 = false;
+          for (let tx = x - 1; tx >= minX; tx--) {
+            if (!hasBlock(voxels, tx, y, z)) {
+              hasPathX2 = true;
+              break;
+            }
+          }
+          if (!hasPathX2) {
+            // Y+ direction
+            let hasPathY1 = false;
+            for (let ty = y + 1; ty <= maxY; ty++) {
+              if (!hasBlock(voxels, x, ty, z)) {
+                hasPathY1 = true;
+                break;
+              }
+            }
+            if (!hasPathY1) {
+              // Y- direction
+              let hasPathY2 = false;
+              for (let ty = y - 1; ty >= minY; ty--) {
+                if (!hasBlock(voxels, x, ty, z)) {
+                  hasPathY2 = true;
+                  break;
+                }
+              }
+              if (!hasPathY2) {
+                // Z+ direction
+                let hasPathZ1 = false;
+                for (let tz = z + 1; tz <= maxZ; tz++) {
+                  if (!hasBlock(voxels, x, y, tz)) {
+                    hasPathZ1 = true;
+                    break;
+                  }
+                }
+                if (!hasPathZ1) {
+                  // Z- direction
+                  let hasPathZ2 = false;
+                  for (let tz = z - 1; tz >= minZ; tz--) {
+                    if (!hasBlock(voxels, x, y, tz)) {
+                      hasPathZ2 = true;
+                      break;
+                    }
+                  }
+                  if (!hasPathZ2) {
+                    // If we get here, this position is internal
+                    internalSpaces.push([x, y, z]);
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  return internalSpaces;
+};
 
 // Generate an mcfunction file with /fill commands
 export const exportToMcFunction = (
@@ -32,8 +125,17 @@ export const exportToMcFunction = (
   const height = maxY - minY + 1;
   const depth = maxZ - minZ + 1;
   
+  // Find internal spaces and fill them with air for export
+  const internalSpaces = findInternalSpaces(voxels, minX, minY, minZ, maxX, maxY, maxZ);
+  
+  // Create a copy of voxels with internal spaces filled with air
+  const exportVoxels = { ...voxels };
+  internalSpaces.forEach(([x, y, z]) => {
+    exportVoxels[`${x},${y},${z}`] = "minecraft:air";
+  });
+  
   // Optimize voxels into regions
-  const regions = optimizeVoxelRegions(voxels, [width, height, depth]);
+  const regions = optimizeVoxelRegions(exportVoxels, [width, height, depth]);
   
   // Generate header with information
   let mcfunction = [
@@ -41,6 +143,7 @@ export const exportToMcFunction = (
     `# Structure dimensions: ${width}x${height}x${depth}`,
     `# Origin position: ${startX}, ${startY}, ${startZ}`,
     `# Block count: ${Object.keys(voxels).length}`,
+    `# Internal spaces filled with air: ${internalSpaces.length}`,
     ""
   ].join("\n");
   

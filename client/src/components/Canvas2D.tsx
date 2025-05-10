@@ -13,9 +13,12 @@ export const Canvas2D = () => {
   const { 
     currentLayer, 
     activeTool, 
-    selectedBlockType, 
+    selectedBlockType,
+    showChunks,
+    activeChunk,
     setActiveTool,
-    setCurrentLayer
+    setCurrentLayer,
+    setActiveChunk
   } = useEditor();
   
   const [isDrawing, setIsDrawing] = useState(false);
@@ -87,6 +90,63 @@ export const Canvas2D = () => {
       ctx.lineTo(startX + i * scale, startY + gridHeight * scale);
       ctx.stroke();
     }
+    
+    // Draw chunks if enabled
+    if (showChunks) {
+      // Calculate number of chunks in each dimension
+      const chunksX = Math.ceil(gridWidth / CHUNK_SIZE);
+      const chunksZ = Math.ceil(gridHeight / CHUNK_SIZE);
+      
+      // Draw chunk grid
+      ctx.strokeStyle = '#5050FF'; // Blue for chunk boundaries
+      ctx.lineWidth = 2;
+      
+      // Horizontal chunk lines
+      for (let z = 0; z <= chunksZ; z++) {
+        const zPos = z * CHUNK_SIZE;
+        if (zPos > gridHeight) continue;
+        
+        ctx.beginPath();
+        ctx.moveTo(startX, startY + zPos * scale);
+        ctx.lineTo(startX + gridWidth * scale, startY + zPos * scale);
+        ctx.stroke();
+      }
+      
+      // Vertical chunk lines
+      for (let x = 0; x <= chunksX; x++) {
+        const xPos = x * CHUNK_SIZE;
+        if (xPos > gridWidth) continue;
+        
+        ctx.beginPath();
+        ctx.moveTo(startX + xPos * scale, startY);
+        ctx.lineTo(startX + xPos * scale, startY + gridHeight * scale);
+        ctx.stroke();
+      }
+      
+      // Highlight active chunk if there is one
+      if (activeChunk) {
+        const [chunkX, chunkZ] = activeChunk;
+        const x = chunkX * CHUNK_SIZE;
+        const z = chunkZ * CHUNK_SIZE;
+        
+        // Check if chunk is in bounds
+        if (x < gridWidth && z < gridHeight) {
+          // Calculate size respecting dimensions
+          const sizeX = Math.min(CHUNK_SIZE, gridWidth - x);
+          const sizeZ = Math.min(CHUNK_SIZE, gridHeight - z);
+          
+          // Draw active chunk outline
+          ctx.strokeStyle = '#FF2020'; // Red for active chunk
+          ctx.lineWidth = 3;
+          ctx.strokeRect(
+            startX + x * scale, 
+            startY + z * scale, 
+            sizeX * scale, 
+            sizeZ * scale
+          );
+        }
+      }
+    }
 
     // Draw blocks in current layer
     for (const [posKey, blockType] of Object.entries(voxels)) {
@@ -116,7 +176,7 @@ export const Canvas2D = () => {
 
   // Get color for block type
   const getBlockColor = (blockType: BlockType) => {
-    const colors = {
+    const colors: Record<string, string> = {
       "minecraft:stone": "#888888",
       "minecraft:dirt": "#8B4513",
       "minecraft:grass_block": "#567D46",
@@ -165,6 +225,11 @@ export const Canvas2D = () => {
     return null;
   };
 
+  // Get chunk coordinates from grid position
+  const getChunkCoordinates = (gridX: number, gridZ: number): [number, number] => {
+    return [Math.floor(gridX / CHUNK_SIZE), Math.floor(gridZ / CHUNK_SIZE)];
+  };
+  
   // Handle mouse down
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
@@ -184,6 +249,13 @@ export const Canvas2D = () => {
     if (e.button === 0) {
       const gridPos = getGridCoordinates(mouseX, mouseY);
       if (gridPos) {
+        // If Alt key is pressed, select chunk instead of placing blocks
+        if (e.altKey && showChunks) {
+          const [chunkX, chunkZ] = getChunkCoordinates(gridPos.x, gridPos.z);
+          setActiveChunk([chunkX, chunkZ]);
+          return;
+        }
+        
         setIsDrawing(true);
         
         // Place or remove block based on active tool

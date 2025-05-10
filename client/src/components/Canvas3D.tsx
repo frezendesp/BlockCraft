@@ -67,7 +67,7 @@ const ChunkGrid = ({ dimensions, activeChunk }: ChunkGridProps) => {
     return lines;
   }, [dimensions, chunksX, chunksZ]);
   
-  // Render the highlighted active chunk
+  // Render the highlighted active chunk with vertical extensions
   const activeChunkMesh = useMemo(() => {
     if (!activeChunk) return null;
     
@@ -82,19 +82,42 @@ const ChunkGrid = ({ dimensions, activeChunk }: ChunkGridProps) => {
     const sizeX = Math.min(CHUNK_SIZE, dimensions[0] - x);
     const sizeZ = Math.min(CHUNK_SIZE, dimensions[2] - z);
     
-    // Create points for the border
-    const points: [number, number, number][][] = [
-      // Bottom perimeter
+    // Max height for vertical lines
+    const MAX_HEIGHT = 254;
+    
+    // Create points for all the lines
+    const lines: [number, number, number][][] = [
+      // Bottom perimeter outline
       [
         [x, 0, z],
         [x + sizeX, 0, z],
         [x + sizeX, 0, z + sizeZ],
         [x, 0, z + sizeZ],
         [x, 0, z],
+      ],
+      // Corner 1: Vertical line going up from the first corner
+      [
+        [x, 0, z],
+        [x, Math.min(MAX_HEIGHT, dimensions[1]), z]
+      ],
+      // Corner 2: Vertical line going up from the second corner
+      [
+        [x + sizeX, 0, z],
+        [x + sizeX, Math.min(MAX_HEIGHT, dimensions[1]), z]
+      ],
+      // Corner 3: Vertical line going up from the third corner
+      [
+        [x + sizeX, 0, z + sizeZ],
+        [x + sizeX, Math.min(MAX_HEIGHT, dimensions[1]), z + sizeZ]
+      ],
+      // Corner 4: Vertical line going up from the fourth corner
+      [
+        [x, 0, z + sizeZ],
+        [x, Math.min(MAX_HEIGHT, dimensions[1]), z + sizeZ]
       ]
     ];
     
-    return points.map((linePoints, index) => (
+    return lines.map((linePoints, index) => (
       <Line
         key={`active-chunk-${index}`}
         points={linePoints}
@@ -389,42 +412,20 @@ const Scene = () => {
 
   return (
     <>
-      {/* Grid visualization */}
+      {/* Grid visualization - only horizontal grid (no Y-axis grid) */}
       {showGrid && (
-        <>
-          <Grid 
-            position={[0, 0, 0]} 
-            args={[dimensions[0] * 2, dimensions[2] * 2]} 
-            cellSize={1}
-            cellThickness={0.5}
-            cellColor="#666666"
-            sectionSize={10}
-            sectionThickness={1}
-            sectionColor="#888888"
-            fadeDistance={dimensions[0] * 2}
-            infiniteGrid={false}
-          />
-          <Grid 
-            rotation={[Math.PI / 2, 0, 0]} 
-            position={[0, dimensions[1] / 2, 0]} 
-            args={[dimensions[0] * 2, dimensions[1] * 2]} 
-            cellSize={1}
-            cellThickness={0.5}
-            cellColor="#666666"
-            fadeDistance={dimensions[0] * 2}
-            infiniteGrid={false}
-          />
-          <Grid 
-            rotation={[0, Math.PI / 2, 0]} 
-            position={[0, 0, 0]} 
-            args={[dimensions[2] * 2, dimensions[1] * 2]} 
-            cellSize={1}
-            cellThickness={0.5}
-            cellColor="#666666"
-            fadeDistance={dimensions[2] * 2}
-            infiniteGrid={false}
-          />
-        </>
+        <Grid 
+          position={[0, 0, 0]} 
+          args={[dimensions[0] * 2, dimensions[2] * 2]} 
+          cellSize={1}
+          cellThickness={0.5}
+          cellColor="#666666"
+          sectionSize={10}
+          sectionThickness={1}
+          sectionColor="#888888"
+          fadeDistance={dimensions[0] * 2}
+          infiniteGrid={false}
+        />
       )}
       
       {/* Chunk visualization */}
