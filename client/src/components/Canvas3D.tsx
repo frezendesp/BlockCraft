@@ -209,9 +209,9 @@ const Voxel = ({
     const colors: Record<string, string> = {
       "minecraft:stone": "#888888",
       "minecraft:dirt": "#8B4513",
-      "minecraft:grass_block": "#567D46",
+      "minecraft:grass_block": "#4CAF50",
       "minecraft:oak_planks": "#B8814B",
-      "minecraft:oak_log": "#B8814B",
+      "minecraft:oak_log": "#8B4513",
       "minecraft:glass": "#E0FFFF",
       "minecraft:water": "#3333FF",
       "minecraft:lava": "#FF5500",
@@ -223,8 +223,23 @@ const Voxel = ({
       "minecraft:redstone_block": "#FF0000",
       "minecraft:emerald_block": "#00FF00",
       "minecraft:bedrock": "#333333",
+      "minecraft:granite": "#9D5C5C",
+      "minecraft:diorite": "#CCCCCC",
+      "minecraft:andesite": "#8A8A8A",
+      "minecraft:coal_ore": "#454545",
+      "minecraft:cobblestone": "#777777",
+      "minecraft:obsidian": "#120458",
+      "minecraft:netherrack": "#813937",
+      "minecraft:soul_sand": "#6A4830",
+      "minecraft:glowstone": "#FFCC00",
+      "minecraft:bricks": "#B03F35",
     };
-    return colors[blockType] || "#FF00FF"; // Default to pink if unknown
+    
+    // Fallback to magenta for unknown blocks
+    const blockColor = colors[blockType] || "#FF00FF";
+    // console.log(`Rendering voxel at [${position.join(',')}] with color ${blockColor} for ${blockType}`);
+    
+    return blockColor;
   }, [blockType]);
 
   // Handle hover effect
@@ -387,13 +402,18 @@ const Scene = () => {
 
   // Convert voxels Map to array for rendering
   const voxelsArray = useMemo(() => {
-    return Object.entries(voxels).map(([key, blockType]) => {
+    const result = Object.entries(voxels).map(([key, blockType]) => {
       const [x, y, z] = key.split(',').map(Number);
       return { 
         position: [x, y, z] as [number, number, number], 
         blockType 
       };
     });
+    
+    // Log for debugging
+    console.log(`Canvas3D: Rendering ${result.length} voxels:`, result);
+    
+    return result;
   }, [voxels]);
 
   // Handle voxel click events
