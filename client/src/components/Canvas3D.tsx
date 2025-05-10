@@ -366,10 +366,7 @@ const Voxel = ({
     }
   }, [hovered]);
 
-  // Debug logging
-  useEffect(() => {
-    console.log(`Rendering voxel at [${position.join(',')}] with color ${color}`);
-  }, [position, color]);
+  // Removed excessive debug logging for better performance
 
   // Get scene to access handleVoxelClick
   const { scene } = useThree();
@@ -778,16 +775,7 @@ const Scene = () => {
             key={`voxel-${voxel.position.join(',')}`}
             position={voxel.position as [number, number, number]}
             blockType={voxel.blockType}
-            onClick={(e) => {
-              e.stopPropagation();
-              // Get the face normal to determine where to place the new block
-              if (e.face) {
-                const normal = e.face.normal.toArray() as [number, number, number];
-                handleVoxelClick(voxel.position as [number, number, number], normal);
-              } else {
-                handleVoxelClick(voxel.position as [number, number, number]);
-              }
-            }}
+            onClick={(e) => e} // Handled internally by the Voxel component
           />
         );
       })}
