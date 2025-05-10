@@ -306,7 +306,7 @@ const SelectionBox = () => {
   );
 };
 
-// Helper component to render a single voxel
+// Helper component to render a single voxel with interaction
 const Voxel = ({ 
   position, 
   blockType, 
@@ -314,7 +314,7 @@ const Voxel = ({
 }: { 
   position: [number, number, number]; 
   blockType: BlockType; 
-  onClick: () => void 
+  onClick: (event: ThreeEvent<MouseEvent>) => void 
 }) => {
   const [hovered, setHovered] = useState(false);
   const mesh = useRef<THREE.Mesh>(null);
@@ -371,6 +371,26 @@ const Voxel = ({
     console.log(`Rendering voxel at [${position.join(',')}] with color ${color}`);
   }, [position, color]);
 
+  // Get scene to access handleVoxelClick
+  const { scene } = useThree();
+  
+  // Handle click with face normal
+  const handleClick = (e: ThreeEvent<MouseEvent>) => {
+    e.stopPropagation();
+    
+    // Get the face normal to determine placement direction
+    if (!e.face) return;
+    
+    const normal = e.face.normal.toArray() as [number, number, number];
+    
+    // Access the handler from scene.userData
+    if (scene.userData.handleVoxelClick) {
+      scene.userData.handleVoxelClick(position, normal);
+    } else {
+      console.error("handleVoxelClick not found in scene.userData");
+    }
+  };
+
   return (
     <group position={position}>
       {/* Main block */}
@@ -378,7 +398,7 @@ const Voxel = ({
         ref={mesh}
         args={[0.96, 0.96, 0.96]} // Block with outline effect
         name="voxel" // Important for raycasting
-        onClick={onClick}
+        onClick={handleClick}
         onPointerOver={(e) => {
           e.stopPropagation();
           setHovered(true);
@@ -589,12 +609,66 @@ const BlockInteraction = () => {
 
 // Scene component to render all voxels
 const Scene = () => {
+  // Get ThreeJS scene to attach handlers
+  const { scene } = useThree();
+  
   // Use selectors to avoid infinite loops
   const voxels = useProject(state => state.voxels);
   const dimensions = useProject(state => state.dimensions);
   const showGrid = useEditor(state => state.showGrid);
   const showChunks = useEditor(state => state.showChunks);
   const currentLayer = useEditor(state => state.currentLayer); // Get current layer for grid rendering
+  
+  // Define voxel interaction handler first
+  const handleVoxelClickInternal = useCallback((position: [number, number, number], faceNormal?: [number, number, number]) => {
+    const [x, y, z] = position;
+    const { activeTool, selectedBlockType } = useEditor.getState();
+    const { setBlock, removeBlock } = useProject.getState();
+    const audio = useAudio.getState();
+
+    if (activeTool === "remove") {
+      // Remove the clicked block
+      removeBlock(x, y, z);
+      
+      // Play sound effect for block break
+      if (audio.playHit) {
+        audio.playHit();
+      }
+      
+      console.log(`Removed block at [${x}, ${y}, ${z}]`);
+    } else if (activeTool === "place" && faceNormal) {
+      // Place block adjacent to the clicked face
+      const [nx, ny, nz] = faceNormal;
+      const newX = x + nx;
+      const newY = y + ny;
+      const newZ = z + nz;
+      
+      console.log(`Placing block at [${newX}, ${newY}, ${newZ}] adjacent to [${x}, ${y}, ${z}]`);
+      console.log(`Face normal: [${nx}, ${ny}, ${nz}]`);
+      
+      // Check if within valid Y range for Minecraft (-64 to 319)
+      if (newY >= -64 && newY <= 319) {
+        setBlock(newX, newY, newZ, selectedBlockType);
+        
+        // Play sound effect for block place
+        if (audio.playHit) {
+          audio.playHit();
+        }
+        
+        console.log(`Block placed: ${selectedBlockType}`);
+      } else {
+        console.log(`Block placement out of Y range (-64 to 319): ${newY}`);
+      }
+    }
+  }, []);
+  
+  // Add handleVoxelClick to scene userData
+  useEffect(() => {
+    scene.userData.handleVoxelClick = handleVoxelClickInternal;
+    return () => {
+      delete scene.userData.handleVoxelClick;
+    };
+  }, [scene, handleVoxelClickInternal]);
 
   // Convert voxels Map to array for rendering
   const voxelsArray = useMemo(() => {
@@ -628,33 +702,7 @@ const Scene = () => {
     return result;
   }, [voxels]);
 
-  // Handle voxel click events
-  const handleVoxelClick = useCallback((position: [number, number, number], faceNormal?: [number, number, number]) => {
-    const [x, y, z] = position;
-    const { activeTool, selectedBlockType } = useEditor.getState();
-    const { setBlock, removeBlock } = useProject.getState();
-
-    if (activeTool === "remove") {
-      removeBlock(x, y, z);
-      // Play sound effect for block break
-      const { playHit } = useAudio.getState();
-      playHit();
-    } else if (activeTool === "place" && faceNormal) {
-      // Place block adjacent to the clicked face
-      const [nx, ny, nz] = faceNormal;
-      const newX = x + nx;
-      const newY = y + ny;
-      const newZ = z + nz;
-      
-      // Check if within valid Y range for Minecraft (-64 to 319)
-      if (newY >= -64 && newY <= 319) {
-        setBlock(newX, newY, newZ, selectedBlockType);
-        // Play sound effect for block place
-        const { playHit } = useAudio.getState();
-        playHit();
-      }
-    }
-  }, []);
+  // This original handleVoxelClick is now moved to handleVoxelClickInternal within the Scene component
   
   // Grid size should be large enough for realistic work
   const gridSize = 1000; // 1000x1000 grid around the center
@@ -730,7 +778,16 @@ const Scene = () => {
             key={`voxel-${voxel.position.join(',')}`}
             position={voxel.position as [number, number, number]}
             blockType={voxel.blockType}
-            onClick={() => handleVoxelClick(voxel.position as [number, number, number])}
+            onClick={(e) => {
+              e.stopPropagation();
+              // Get the face normal to determine where to place the new block
+              if (e.face) {
+                const normal = e.face.normal.toArray() as [number, number, number];
+                handleVoxelClick(voxel.position as [number, number, number], normal);
+              } else {
+                handleVoxelClick(voxel.position as [number, number, number]);
+              }
+            }}
           />
         );
       })}
