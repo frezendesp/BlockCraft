@@ -103,7 +103,10 @@ export const exportToMcFunction = (
 ): string => {
   // Check if there are any voxels
   if (Object.keys(voxels).length === 0) {
-    return "# Empty structure - no blocks to place";
+    // Return a comment and a single block as placeholder so the file isn't empty
+    return `# Estrutura vazia criada pelo BlockForge
+# Adicionando um bloco marcador na posição de origem
+fill ~0 ~0 ~0 ~0 ~0 ~0 minecraft:redstone_block`;
   }
   
   // Find the dimensions of the structure
@@ -154,15 +157,16 @@ export const exportToMcFunction = (
     const [ex, ey, ez] = end;
     
     // Adjust for structure origin
-    const worldX1 = startX + sx + minX;
-    const worldY1 = startY + sy + minY;
-    const worldZ1 = startZ + sz + minZ;
-    const worldX2 = startX + ex + minX;
-    const worldY2 = startY + ey + minY;
-    const worldZ2 = startZ + ez + minZ;
+    const relX1 = startX + sx + minX;
+    const relY1 = startY + sy + minY;
+    const relZ1 = startZ + sz + minZ;
+    const relX2 = startX + ex + minX;
+    const relY2 = startY + ey + minY;
+    const relZ2 = startZ + ez + minZ;
     
-    // Generate fill command
-    mcfunction += `fill ${worldX1} ${worldY1} ${worldZ1} ${worldX2} ${worldY2} ${worldZ2} ${blockType}\n`;
+    // Generate fill command with relative coordinates (~)
+    // This makes the structure spawn relative to the player's position in Minecraft
+    mcfunction += `fill ~${relX1} ~${relY1} ~${relZ1} ~${relX2} ~${relY2} ~${relZ2} ${blockType}\n`;
   });
   
   return mcfunction;

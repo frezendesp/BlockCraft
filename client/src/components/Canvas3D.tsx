@@ -4,6 +4,7 @@ import { OrbitControls, Grid, Box, Line } from "@react-three/drei";
 import * as THREE from "three";
 import { useEditor } from "@/lib/stores/useEditor";
 import { useProject } from "@/lib/stores/useProject";
+import { useAudio } from "@/lib/stores/useAudio";
 import { BlockType } from "@/lib/blocks";
 
 // Minecraft chunk size (16x16)
@@ -592,6 +593,7 @@ const Scene = () => {
   const voxels = useProject(state => state.voxels);
   const dimensions = useProject(state => state.dimensions);
   const showGrid = useEditor(state => state.showGrid);
+  const showChunks = useEditor(state => state.showChunks);
   const currentLayer = useEditor(state => state.currentLayer); // Get current layer for grid rendering
 
   // Convert voxels Map to array for rendering
@@ -627,16 +629,30 @@ const Scene = () => {
   }, [voxels]);
 
   // Handle voxel click events
-  const handleVoxelClick = useCallback((position: [number, number, number]) => {
+  const handleVoxelClick = useCallback((position: [number, number, number], faceNormal?: [number, number, number]) => {
     const [x, y, z] = position;
     const { activeTool, selectedBlockType } = useEditor.getState();
     const { setBlock, removeBlock } = useProject.getState();
 
     if (activeTool === "remove") {
       removeBlock(x, y, z);
-    } else if (activeTool === "place") {
-      // For placement, we actually need to check adjacency
-      // which is handled in the BlockInteraction component
+      // Play sound effect for block break
+      const { playHit } = useAudio.getState();
+      playHit();
+    } else if (activeTool === "place" && faceNormal) {
+      // Place block adjacent to the clicked face
+      const [nx, ny, nz] = faceNormal;
+      const newX = x + nx;
+      const newY = y + ny;
+      const newZ = z + nz;
+      
+      // Check if within valid Y range for Minecraft (-64 to 319)
+      if (newY >= -64 && newY <= 319) {
+        setBlock(newX, newY, newZ, selectedBlockType);
+        // Play sound effect for block place
+        const { playHit } = useAudio.getState();
+        playHit();
+      }
     }
   }, []);
   
@@ -648,19 +664,31 @@ const Scene = () => {
       {/* Grid visualization - only at current layer */}
       {showGrid && (
         <>
-          {/* Main grid at current layer level */}
-          <Grid 
-            position={[0, currentLayer, 0]} 
-            args={[gridSize, gridSize]} 
-            cellSize={1}
-            cellThickness={0.5}
-            cellColor="#666666"
-            sectionSize={16} // Match chunk size (16x16)
-            sectionThickness={1}
-            sectionColor="#5050FF" // Highlight 16x16 chunks
-            fadeDistance={100}
-            infiniteGrid={true} // Allow unlimited XZ plane
-          />
+          {/* Main grid at current layer level - fixed position to prevent shaking */}
+          <mesh
+            position={[0, currentLayer, 0]}
+            rotation={[-Math.PI / 2, 0, 0]}
+            receiveShadow
+          >
+            <planeGeometry args={[gridSize, gridSize]} />
+            <meshBasicMaterial 
+              color="#333333" 
+              opacity={0.2} 
+              transparent={true}
+              wireframe={true}
+              side={THREE.DoubleSide}
+            />
+          </mesh>
+          
+          {/* Chunk grid overlay - simplified stable approach */}
+          {showChunks && (
+            <group>
+              <gridHelper 
+                args={[gridSize, gridSize / 16, '#5050FF', '#5050FF']} 
+                position={[0, currentLayer, 0]} 
+              />
+            </group>
+          )}
           
           {/* Subtle reference indicators for Minecraft height limits */}
           {currentLayer === -64 && (
