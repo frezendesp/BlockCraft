@@ -245,26 +245,37 @@ export const Canvas2D = () => {
       return;
     }
 
-    // Left mouse button for interaction
+    const gridPos = getGridCoordinates(mouseX, mouseY);
+    if (!gridPos) return;
+    
+    // If Alt key is pressed, select chunk instead of placing blocks
+    if (e.altKey && showChunks) {
+      const [chunkX, chunkZ] = getChunkCoordinates(gridPos.x, gridPos.z);
+      setActiveChunk([chunkX, chunkZ]);
+      return;
+    }
+    
+    // Left mouse button (place blocks)
     if (e.button === 0) {
-      const gridPos = getGridCoordinates(mouseX, mouseY);
-      if (gridPos) {
-        // If Alt key is pressed, select chunk instead of placing blocks
-        if (e.altKey && showChunks) {
-          const [chunkX, chunkZ] = getChunkCoordinates(gridPos.x, gridPos.z);
-          setActiveChunk([chunkX, chunkZ]);
-          return;
-        }
-        
-        setIsDrawing(true);
-        
-        // Place or remove block based on active tool
-        if (activeTool === 'place') {
-          setBlock(gridPos.x, currentLayer, gridPos.z, selectedBlockType);
-        } else if (activeTool === 'remove') {
-          removeBlock(gridPos.x, currentLayer, gridPos.z);
-        }
+      setIsDrawing(true);
+      
+      // Place block based on active tool
+      if (activeTool === 'place') {
+        setBlock(gridPos.x, currentLayer, gridPos.z, selectedBlockType);
+      } else if (activeTool === 'remove') {
+        removeBlock(gridPos.x, currentLayer, gridPos.z);
       }
+    }
+    // Right mouse button (remove blocks)
+    else if (e.button === 2) {
+      // Prevent context menu from showing
+      e.preventDefault();
+      e.stopPropagation();
+      
+      setIsDrawing(true);
+      
+      // Always remove block on right click
+      removeBlock(gridPos.x, currentLayer, gridPos.z);
     }
   };
 
@@ -304,6 +315,15 @@ export const Canvas2D = () => {
         }
       }
     }
+    
+    // Removing blocks with right mouse button
+    if (isDrawing && e.buttons === 2) {
+      const gridPos = getGridCoordinates(mouseX, mouseY);
+      if (gridPos) {
+        // Always remove blocks with right mouse button
+        removeBlock(gridPos.x, currentLayer, gridPos.z);
+      }
+    }
   };
 
   // Handle mouse up
@@ -324,6 +344,13 @@ export const Canvas2D = () => {
         : Math.min(50, prevScale + 1);
       return newScale;
     });
+  };
+  
+  // Prevent context menu from appearing on right-click
+  const handleContextMenu = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    return false;
   };
 
   // Handle key press for layer navigation
@@ -385,6 +412,7 @@ export const Canvas2D = () => {
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
         onWheel={handleWheel}
+        onContextMenu={handleContextMenu}
       />
       <LayerControls />
     </div>
