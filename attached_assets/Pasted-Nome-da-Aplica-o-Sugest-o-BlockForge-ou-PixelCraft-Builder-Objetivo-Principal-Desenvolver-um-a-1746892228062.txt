@@ -1,0 +1,83 @@
+Nome da Aplicação (Sugestão): BlockForge ou PixelCraft Builder
+
+Objetivo Principal:
+Desenvolver um aplicativo web interativo (pure client-side) que funcione como um editor de estruturas Minecraft em voxel 3D. O aplicativo deve permitir que usuários visualizem, editem e exportem designs de construções do Minecraft de forma intuitiva e eficiente, sem a necessidade de instalações locais complexas.
+
+Tecnologias Core Esperadas:
+
+Front-end: HTML5, CSS3, JavaScript
+Framework/Biblioteca 3D: Uma biblioteca JavaScript robusta para renderização 3D (e.g., Three.js ou Babylon.js) é obrigatória para o desempenho e funcionalidades 3D.
+Sem Back-end: A aplicação deve ser completamente cliente-side (sem necessidade de servidor para funcionalidade principal).
+Funcionalidades Principais:
+
+1. Gestão do Canvas 3D (Voxel Grid):
+* Dimensões do Projeto:
+* Padrão inicial: 100x100x100 voxels (X, Y, Z).
+* Possibilidade de definir dimensões personalizadas ao iniciar um novo projeto (ex: 32x32x32, máximo recomendado 256x256x256 para estabilidade).
+* A estrutura interna deve ser um modelo esparso (e.g., Map ou objeto JS com chaves "x,y,z") para otimização de memória, armazenando apenas blocos colocados (não blocos de ar).
+* Blocos no Canvas: Cada voxel representa um bloco do Minecraft. O valor do voxel é o ID do bloco do Minecraft (string, ex: "minecraft:stone").
+
+2. Modos de Visualização e Navegação:
+
+* **Visualização 3D (Padrão ao Iniciar):**
+    * Renderização interativa em 3D da estrutura completa.
+    * Controles de Câmera:
+        * **Orbitar:** Gira a câmera ao redor do centro da estrutura (clique e arraste com o mouse).
+        * **Pan (Mover):** Desloca a câmera horizontal e verticalmente (Shift + clique e arraste).
+        * **Zoom:** Aproxima/afasta a câmera (rolagem do mouse).
+    * Rotação suave e responsiva.
+    * Mostrar/Esconder Grade (opcional, para visualização).
+* **Visualização 2D (Camada):**
+    * Um botão de toggle "2D/3D" ou "Camada/3D".
+    * Exibe uma única camada (plano X-Z) da estrutura em uma coordenada Y específica.
+    * Grade 2D clara para a camada atual.
+    * **Controle de Nível Y:** Um slider (deslizador) ou campo de entrada numérica que permite ao usuário selecionar a camada Y a ser visualizada/editada. A navegação deve ser suave.
+    * No modo 2D, a estrutura 3D pode ser visualizada de forma translúcida abaixo da camada atual para contexto.
+3. Ferramentas de Edição:
+
+* **Paleta de Blocos (Menu Lateral):**
+    * Um menu lateral fixo à esquerda ou direita.
+    * Lista de blocos Minecraft pré-definidos (IDs de string, ex: "minecraft:stone", "minecraft:dirt", "minecraft:oak_planks", "minecraft:water", "minecraft:lava", "minecraft:glass", "minecraft:bedrock", "minecraft:air").
+    * Representação visual: Cores simples ou, idealmente, ícones/mini-texturas dos blocos (se possível integrar assets simples sem problemas de direitos autorais).
+    * Opção de adicionar/remover blocos à paleta (entrada de texto para IDs de bloco personalizados).
+    * Campo de busca na paleta para encontrar blocos rapidamente.
+    * Categorização de blocos (ex: "Naturais", "Construção", "Líquidos", "Redstone") para facilitar a navegação na paleta.
+* **Ferramentas de Manipulação (Toolbar Superior ou Lateral):**
+    * **Ferramenta Lápis/Pincel:** Coloca um único bloco por clique ou arrastando.
+    * **Ferramenta Borracha:** Remove um único bloco por clique ou arrastando (preenche com ar).
+    * **Ferramenta Balde de Tinta/Preenchimento:** Preenche uma área contígua (com o mesmo tipo de bloco ou ar) com o bloco selecionado.
+    * **Ferramenta Seleção:** Permite selecionar uma região cúbica (ex: caixa delimitadora) na visualização 3D ou 2D.
+    * **Cortar/Copiar/Colar/Deletar:** Para regiões selecionadas.
+    * **Undo/Redo:** Suporte para múltiplos passos de desfazer/refazer as últimas ações de edição.
+    * **Espelhamento/Simetria:** Ferramentas para espelhar (mirror) a estrutura em relação a um eixo (X, Z, ou ambos).
+4. Gerenciamento de Projeto:
+
+* **Novo Projeto:** Limpa o canvas e permite definir novas dimensões.
+* **Salvar Projeto:** Exporta o estado atual da estrutura para um arquivo JSON (próprio formato da aplicação), permitindo que o usuário salve o progresso localmente.
+* **Carregar Projeto:** Importa um arquivo JSON salvo anteriormente para continuar a edição.
+5. Funcionalidade de Exportação:
+
+* Um botão "Exportar".
+* **Formato Principal: Arquivo `.mcfunction` (Datapack):**
+    * Gera uma lista de comandos `/fill` otimizados (agrupando blocos contíguos do mesmo tipo, como no nosso script Python).
+    * Permite ao usuário definir as coordenadas `start_x`, `start_y`, `start_z` que serão usadas como ponto de referência para os comandos no Minecraft.
+    * Nome do arquivo padrão: `build_plan.mcfunction`.
+* **Formato Opcional: JSON (para o CSV):**
+    * Exportar a estrutura como um formato JSON que possa ser facilmente convertido para CSV (ou até mesmo CSVs separados por camada, se o usuário precisar para o fluxo antigo).
+6. Interface de Usuário (UI/UX):
+
+* **Layout Limpo e Intuitivo:** Design responsivo para telas de desktop (não é necessário suporte total a mobile complexo, mas deve ser utilizável).
+* **Informações Visíveis:** Exibir coordenadas do bloco sob o cursor, contagem total de blocos, nível Y atual.
+* **Feedback Visual:** Indicação clara da ferramenta selecionada, do bloco atual e do status (salvando, carregando, exportando).
+* **Tooltips:** Pequenas descrições ao passar o mouse sobre botões e ferramentas.
+7. Considerações de Desempenho e Otimização:
+
+* A renderização e a edição devem ser fluidas para estruturas de até, no mínimo, 100x100x100 blocos.
+* A aplicação deve implementar técnicas de otimização 3D (e.g., frustum culling, back-face culling, mesh merging) para garantir um bom desempenho em navegadores modernos.
+* O uso de um modelo de dados esparso para a estrutura 3D é crucial para a memória.
+Requisitos Não-Funcionais / Restrições:
+
+Totalmente Cliente-Side: Não deve haver necessidade de um servidor de back-end para o funcionamento principal.
+Compatibilidade: Funcionar em navegadores modernos (Chrome, Firefox, Edge).
+Sem Acesso Local de Arquivos (Direto): Como mencionado, a funcionalidade de "ler arquivos locais do Minecraft para identificar todos os nomes de blocos" é impossível para um aplicativo web devido a restrições de segurança do navegador. A paleta de blocos deve ser pré-definida ou personalizável via entrada manual do usuário.
+Código Limpo e Modular: A arquitetura do código deve ser bem organizada e modular para futura manutenção e expansão.
